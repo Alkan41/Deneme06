@@ -1,0 +1,940 @@
+﻿<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hava Aracı Faaliyet Takip Menü</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .menu-container {
+            width: 350px;
+            background-color: #ffffff;
+            border: 1px solid #ddd;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .header-container {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #eee;
+        }
+        .header-container h2 {
+            margin: 0;
+            color: #333;
+        }
+        .menu-list {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+        }
+        .menu-item {
+            cursor: pointer;
+            border-bottom: 1px solid #ddd;
+            user-select: none;
+        }
+        .menu-title {
+            padding: 12px 15px;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .menu-title .arrow {
+            font-size: 1.2em;
+            transition: transform 0.3s;
+        }
+        .menu-title.active .arrow {
+            transform: rotate(90deg);
+        }
+        
+        /* Kırmızı ana menü başlıkları (6 adet) */
+        .main-menu-item .menu-title {
+            background-color: #e53935;
+            color: #ffffff;
+            text-transform: uppercase;
+        }
+        /* Gri alt başlıklar */
+        .sub-menu-item .menu-title {
+            background-color: #cccccc;
+            color: #000000;
+        }
+        /* Grinin altındaki, açık yeşil menü öğeleri */
+        .sub-sub-item .menu-title {
+            background-color: #a5d6a7;
+            color: #000000;
+        }
+
+        .nested-menu {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            display: none;
+        }
+        .nested-menu.open {
+            display: block;
+        }
+        .sub-menu-item, .sub-sub-item {
+            border-top: none;
+        }
+        
+        /* İkinci seviye menülerin stili */
+        .sub-menu-item .menu-title {
+            padding-left: 30px;
+        }
+        /* Üçüncü seviye menülerin stili */
+        .sub-sub-item .menu-title {
+            padding-left: 45px;
+        }
+
+        /* Modal pencere için stil */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            width: 80%;
+            max-width: 600px;
+            position: relative;
+        }
+        .close-button {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            color: #e53935;
+        }
+        .modal-content h3 {
+            margin-top: 0;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .update-button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #e53935;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+        .update-button:hover {
+            background-color: #d32f2f;
+        }
+        
+        /* Yeni pencere yerine modal içeriği için stil */
+        .inner-modal-content {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .inner-modal-content h2 {
+            text-align: center;
+            color: #333;
+        }
+        .info-row {
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        .info-row strong {
+            display: inline-block;
+            width: 250px;
+        }
+        .form-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .form-row label {
+            margin-right: 10px;
+            font-weight: bold;
+            width: 200px;
+        }
+        .form-row input[type="date"], .form-row input[type="text"], .form-row select {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .display-box {
+            border: 1px solid #ccc;
+            padding: 8px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            min-width: 150px;
+            text-align: center;
+        }
+        .daily-input {
+            width: 150px;
+            text-align: center;
+        }
+        .total-display {
+            width: 150px;
+            text-align: center;
+        }
+        .hidden {
+            display: none;
+        }
+
+        /* Kayıt başarılı modal stili */
+        #success-modal .modal-content {
+            width: 80%;
+            max-width: 400px;
+        }
+        #success-modal h3 {
+            color: green;
+        }
+        #success-modal pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background-color: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        #success-modal .ok-button {
+            background-color: #4CAF50;
+        }
+        #success-modal .ok-button:hover {
+            background-color: #45a049;
+        }
+        /* Yeni eklenen PDF indir butonu için stil */
+        #download-pdf-button {
+            margin-top: 10px;
+            background-color: #007BFF;
+        }
+        #download-pdf-button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+
+<div class="menu-container">
+    <div class="header-container">
+        <h2>Hava Aracı Faaliyet Takip</h2>
+    </div>
+
+    <ul class="menu-list">
+        <li class="menu-item main-menu-item">
+            <div class="menu-title">
+                1. Hava Araçları Faydalı Saatler Güncelle
+                <span class="arrow">></span>
+            </div>
+            <ul class="nested-menu">
+                <li class="sub-menu-item">
+                    <div class="menu-title">Uçuş Saatleri İşlemleri
+                        <span class="arrow">></span>
+                    </div>
+                    <ul class="nested-menu">
+                        <li class="sub-sub-item"><div class="menu-title" id="update-aircraft-hours">Hava Aracı Uçuş Saatleri güncelleme</div></li>
+                    </ul>
+                </li>
+                <li class="sub-menu-item">
+                    <div class="menu-title">Envanter İşlemleri
+                        <span class="arrow">></span>
+                    </div>
+                    <ul class="nested-menu">
+                           <li class="sub-sub-item"><div class="menu-title">Hava Araçlarının Sisteme Ekle/Kaldır</div></li>
+                    </ul>
+                </li>
+                <li class="sub-menu-item">
+                    <div class="menu-title">Sigorta ve Ruhsat Bilgileri
+                        <span class="arrow">></span>
+                    </div>
+                    <ul class="nested-menu">
+                        <li class="sub-sub-item"><div class="menu-title">Hava Aracı Sigorta ve Ruhsat Bilgileri Takip Çizelgesi Görüntüleme</div></li>
+                        <li class="sub-sub-item"><div class="menu-title">Sigorta ve Ruhsat Bilgilerinin Kayıt ve Güncelleme Ekranı</div></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+
+        <li class="menu-item main-menu-item">
+            <div class="menu-title">
+                2. Bakım/Arıza veri güncelle
+                <span class="arrow">></span>
+            </div>
+            <ul class="nested-menu">
+                <li class="sub-menu-item">
+                    <div class="menu-title">Planlı Bakımlar
+                        <span class="arrow">></span>
+                    </div>
+                    <ul class="nested-menu">
+                        <li class="sub-sub-item"><div class="menu-title">Hava Aracı Tipine göre Bakımların Listesi Sorgu Görüntüleme</div></li>
+                    </ul>
+                </li>
+                <li class="sub-menu-item">
+                    <div class="menu-title">Bakım Kitapçıkları ve Talimatlar (MEL, AMM, IPC)
+                        <span class="arrow">></span>
+                    </div>
+                    <ul class="nested-menu">
+                        <li class="sub-sub-item"><div class="menu-title">Hava Aracı Tiplerine göre MEL Listesi Görüntüleme</div></li>
+                        <li class="sub-sub-item"><div class="menu-title">Hava Aracı Tiplerine göre Kullanılan Referans Yayın Listesi Görüntüleme</div></li>
+                    </ul>
+                </li>
+                <li class="sub-menu-item">
+                    <div class="menu-title">Bakım İşçilik Saatleri
+                        <span class="arrow">></span>
+                    </div>
+                    <ul class="nested-menu">
+                        <li class="sub-sub-item"><div class="menu-title">Hava Aracı Tiplerine göre İşçilik Saatleri Listesi Görüntüleme</div></li>
+                    </ul>
+                </li>
+                <li class="sub-menu-item">
+                    <div class="menu-title">Bakım Saatleri ve Takvimi
+                        <span class="arrow">></span>
+                    </div>
+                    <ul class="nested-menu">
+                        <li class="sub-sub-item"><div class="menu-title">Hava Aracı Bakım Takip Çizelgesi Sorgulama</div></li>
+                        <li class="sub-sub-item"><div class="menu-title">Yaklaşan hava aracı bakımları Görüntüleme</div></li>
+                    </ul>
+                </li>
+                <li class="sub-menu-item">
+                    <div class="menu-title">Ömürlü Parça Takibi
+                        <span class="arrow">></span>
+                    </div>
+                    <ul class="nested-menu">
+                        <li class="sub-sub-item"><div class="menu-title">Hava Aracı Ömürlü Parça Kalan Saat Çizelgesi Görüntüleme</div></li>
+                        <li class="sub-sub-item"><div class="menu-title">Yaklaşan Ömürlü parça Görüntüleme</div></li>
+                        <li class="sub-sub-item"><div class="menu-title">Ömürlü Parça Değişimi Kayıtları Görüntüleme</div></li>
+                    </ul>
+                </li>
+                <li class="sub-menu-item">
+                    <div class="menu-title">Bakım ve Arıza Kayıtları
+                        <span class="arrow">></span>
+                    </div>
+                    <ul class="nested-menu">
+                        <li class="sub-sub-item"><div class="menu-title">Bakım Kaydı Çizelgesi Görüntüleme</div></li>
+                        <li class="sub-sub-item"><div class="menu-title">Bakım Kaydı Oluştur</div></li>
+                        <li class="sub-sub-item"><div class="menu-title">Kayıtlı Açık Bakım Sorgulama / KALDIR</div></li>
+                        <li class="sub-sub-item"><div class="menu-title">Arıza Kaydı Çizelgesi Sorgulama</div></li>
+                        <li class="sub-sub-item"><div class="menu-title">Arıza Kaydı oluştur</div></li>
+                        <li class="sub-sub-item"><div class="menu-title">Kayıtlı Açık Arıza Sorgulama / KALDIR</div></li>
+                        <li class="sub-sub-item"><div class="menu-title">CRS Onay ekranı</div></li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+
+        <li class="menu-item main-menu-item">
+            <div class="menu-title">
+                3. İkmal / Lojistik
+                <span class="arrow">></span>
+            </div>
+            <ul class="nested-menu">
+                <li class="sub-menu-item">
+                    <div class="menu-title">Malzeme Stok Takip
+                        <span class="arrow">></span>
+                    </div>
+                    <ul class="nested-menu">
+                        <li class="sub-sub-item"><div class="menu-title">Kontrollü ve yedek parçanın Sorgulanma</div></li>
+                    </ul>
+                </li>
+                <li class="sub-menu-item">
+                    <div class="menu-title">Malzeme Giriş / Çıkış Kayıt
+                        <span class="arrow">></span>
+                    </div>
+                    <ul class="nested-menu">
+                        <li class="sub-sub-item"><div class="menu-title">Kontrollü ve yedek parça kayıt güncelle</div></li>
+                    </ul>
+                </li>
+                <li class="sub-menu-item"><div class="menu-title">Periyodik Bakım Kit sorgulama</div></li>
+            </ul>
+        </li>
+        
+        <li class="menu-item main-menu-item">
+            <div class="menu-title">
+                4. Yer Destek Ekipmanları (GSE)
+                <span class="arrow">></span>
+            </div>
+            <ul class="nested-menu">
+                <li class="sub-menu-item"><div class="menu-title">Yer Destek Ekipman Ekle/kaldır</div></li>
+                <li class="sub-menu-item"><div class="menu-title">Kayıtlı Açık Arıza ve Onarım Sorgulama</div></li>
+                <li class="sub-menu-item"><div class="menu-title">Periyodik Bakım Planı ve Takip Çizelgesi Görüntüleme</div></li>
+                <li class="sub-menu-item"><div class="menu-title">Yer Destek Ekipmanları Arıza ve Onarım Kayıt oluştur</div></li>
+                <li class="sub-menu-item"><div class="menu-title">Yer Destek Ekipman Yaklaşan bakımları Görüntüleme</div></li>
+            </ul>
+        </li>
+
+        <li class="menu-item main-menu-item">
+            <div class="menu-title">
+                5. Kalibrasyona Tabi Malzemeler
+                <span class="arrow">></span>
+            </div>
+            <ul class="nested-menu">
+                <li class="sub-menu-item"><div class="menu-title">Kalibrasyona Tabi Cihaz Listesi Ekle/kaldır</div></li>
+                <li class="sub-menu-item"><div class="menu-title">Kalibrasyon Planı ve Takip Çizelgesi Görüntüleme</div></li>
+                <li class="sub-sub-item"><div class="menu-title">Yaklaşan Kalibrasyona tabii malzemeler Görüntüleme</div></li>
+            </ul>
+        </li>
+        
+        <li class="menu-item main-menu-item">
+            <div class="menu-title">
+                6. Personel
+                <span class="arrow">></span>
+            </div>
+            <ul class="nested-menu">
+                <li class="sub-menu-item"><div class="menu-title">Personel Kayıt Ekle/Kaldır</div></li>
+                <li class="sub-menu-item"><div class="menu-title">Personel Listesi</div></li>
+            </ul>
+        </li>
+    </ul>
+</div>
+
+<div id="updateScreen" class="modal-overlay">
+    <div class="modal-content">
+        <span class="close-button" id="closeButton1">X</span>
+        <div id="first-modal-content">
+            <h3>Hava Aracı Uçuş Saatleri Güncelleme Ekranı</h3>
+            <div class="form-group">
+                <label for="aircraftModelSelect">Hava Aracı Modeli:</label>
+                <select id="aircraftModelSelect">
+                    <option value="">Lütfen seçim yapınız</option>
+                    <option value="AT-802">AT-802</option>
+                    <option value="T-70">T-70</option>
+                    <option value="BELL-429">BELL-429</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="connectedSelect">Hava Aracı Kuyruk No:</label>
+                <select id="connectedSelect">
+                    <option value="">Önce model seçiniz</option>
+                </select>
+            </div>
+            <button id="updateButton" class="update-button">Güncelle</button>
+        </div>
+        
+        <div id="second-modal-content" class="hidden">
+            <span class="close-button" id="closeButton2">X</span>
+            <div class="inner-modal-content">
+                <h2>Hava Aracı Uçuş Saatleri Güncelleme</h2>
+                <p><strong id="selected-model"></strong></p>
+                <p><strong id="selected-tailno"></strong></p>
+                <div class="form-row">
+                    <label for="date-input">1-Tarih:</label>
+                    <input type="date" id="date-input">
+                </div>
+                <div class="form-row">
+                    <label>2-Devreden Toplam Uçuş Saati:</label>
+                    <div id="transferredHours" class="display-box">138:50</div>
+                </div>
+                <div class="form-row">
+                    <label for="daily-hours-input">3-Günlük Uçuş Saati:</label>
+                    <input type="text" id="daily-hours-input" class="daily-input" placeholder="HH:MM">
+                </div>
+                <div class="form-row">
+                    <label>4-Toplam Uçuş Saati:</label>
+                    <div id="totalHours" class="display-box total-display"></div>
+                </div>
+                <div class="form-row">
+                    <label>5-Devreden Toplam Motor Saati:</label>
+                    <div id="transferredEngineHours" class="display-box">450:30</div>
+                </div>
+                <div class="form-row">
+                    <label for="daily-engine-hours-input">6-Günlük Motor Saati:</label>
+                    <input type="text" id="daily-engine-hours-input" class="daily-input" placeholder="HH:MM">
+                </div>
+                <div class="form-row">
+                    <label>7-Toplam Motor Saati:</label>
+                    <div id="totalEngineHours" class="display-box total-display"></div>
+                </div>
+                <div class="form-row">
+                    <label>8-Devreden Toplam Uçuş Sayısı:</label>
+                    <div id="transferredFlightCount" class="display-box">105</div>
+                </div>
+                <div class="form-row">
+                    <label for="daily-flight-count-input">9-Günlük Uçuş Sayısı:</label>
+                    <input type="text" id="daily-flight-count-input" class="daily-input" placeholder="0">
+                </div>
+                <div class="form-row">
+                    <label>10-Toplam Uçuş Sayısı:</label>
+                    <div id="totalFlightCount" class="display-box total-display"></div>
+                </div>
+                <div class="form-row">
+                    <label>11-Devreden Toplam Motor Çalıştırma Sayısı:</label>
+                    <div id="transferredEngineCycles" class="display-box">250</div>
+                </div>
+                <div class="form-row">
+                    <label for="daily-engine-cycles-input">12-Günlük Motor Çalıştırma Sayısı:</label>
+                    <input type="text" id="daily-engine-cycles-input" class="daily-input" placeholder="0">
+                </div>
+                <div class="form-row">
+                    <label>13-Toplam Motor Çalıştırma Sayısı:</label>
+                    <div id="totalEngineCycles" class="display-box total-display"></div>
+                </div>
+                <div class="form-row">
+                    <label>14-Devreden Toplam İniş Sayısı:</label>
+                    <div id="transferredLandingCount" class="display-box">110</div>
+                </div>
+                <div class="form-row">
+                    <label for="daily-landing-count-input">15-Günlük İniş Sayısı:</label>
+                    <input type="text" id="daily-landing-count-input" class="daily-input" placeholder="0">
+                </div>
+                <div class="form-row">
+                    <label>16-Toplam İniş Sayısı:</label>
+                    <div id="totalLandingCount" class="display-box total-display"></div>
+                </div>
+                <div class="form-row">
+                    <label for="engine-start-date">17-En Son Motor Çalıştırma Tarihi:</label>
+                    <input type="date" id="engine-start-date">
+                </div>
+                <div class="form-row">
+                    <label for="mission-location">18-Görev Yeri:</label>
+                    <select id="mission-location">
+                        <option value="">Lütfen il seçiniz</option>
+                        <option value="Adana">Adana</option>
+                        <option value="Adıyaman">Adıyaman</option>
+                        <option value="Afyonkarahisar">Afyonkarahisar</option>
+                        <option value="Ağrı">Ağrı</option>
+                        <option value="Amasya">Amasya</option>
+                        <option value="Ankara">Ankara</option>
+                        <option value="Antalya">Antalya</option>
+                        <option value="Artvin">Artvin</option>
+                        <option value="Aydın">Aydın</option>
+                        <option value="Balıkesir">Balıkesir</option>
+                        <option value="Bilecik">Bilecik</option>
+                        <option value="Bingöl">Bingöl</option>
+                        <option value="Bitlis">Bitlis</option>
+                        <option value="Bolu">Bolu</option>
+                        <option value="Burdur">Burdur</option>
+                        <option value="Bursa">Bursa</option>
+                        <option value="Çanakkale">Çanakkale</option>
+                        <option value="Çankırı">Çankırı</option>
+                        <option value="Çorum">Çorum</option>
+                        <option value="Denizli">Denizli</option>
+                        <option value="Diyarbakır">Diyarbakır</option>
+                        <option value="Edirne">Edirne</option>
+                        <option value="Elazığ">Elazığ</option>
+                        <option value="Erzincan">Erzincan</option>
+                        <option value="Erzurum">Erzurum</option>
+                        <option value="Eskişehir">Eskişehir</option>
+                        <option value="Gaziantep">Gaziantep</option>
+                        <option value="Giresun">Giresun</option>
+                        <option value="Gümüşhane">Gümüşhane</option>
+                        <option value="Hakkari">Hakkari</option>
+                        <option value="Hatay">Hatay</option>
+                        <option value="Isparta">Isparta</option>
+                        <option value="Mersin">Mersin</option>
+                        <option value="İstanbul">İstanbul</option>
+                        <option value="İzmir">İzmir</option>
+                        <option value="Kars">Kars</option>
+                        <option value="Kastamonu">Kastamonu</option>
+                        <option value="Kayseri">Kayseri</option>
+                        <option value="Kırklareli">Kırklareli</option>
+                        <option value="Kırşehir">Kırşehir</option>
+                        <option value="Kocaeli">Kocaeli</option>
+                        <option value="Konya">Konya</option>
+                        <option value="Kütahya">Kütahya</option>
+                        <option value="Malatya">Malatya</option>
+                        <option value="Manisa">Manisa</option>
+                        <option value="Kahramanmaraş">Kahramanmaraş</option>
+                        <option value="Mardin">Mardin</option>
+                        <option value="Muğla">Muğla</option>
+                        <option value="Muş">Muş</option>
+                        <option value="Nevşehir">Nevşehir</option>
+                        <option value="Niğde">Niğde</option>
+                        <option value="Ordu">Ordu</option>
+                        <option value="Rize">Rize</option>
+                        <option value="Sakarya">Sakarya</Sakarya>
+                        <option value="Samsun">Samsun</option>
+                        <option value="Siirt">Siirt</option>
+                        <option value="Sinop">Sinop</option>
+                        <option value="Sivas">Sivas</option>
+                        <option value="Tekirdağ">Tekirdağ</option>
+                        <option value="Tokat">Tokat</option>
+                        <option value="Trabzon">Trabzon</option>
+                        <option value="Tunceli">Tunceli</option>
+                        <option value="Şanlıurfa">Şanlıurfa</option>
+                        <option value="Uşak">Uşak</option>
+                        <option value="Van">Van</option>
+                        <option value="Yozgat">Yozgat</option>
+                        <option value="Zonguldak">Zonguldak</option>
+                        <option value="Aksaray">Aksaray</option>
+                        <option value="Bayburt">Bayburt</option>
+                        <option value="Karaman">Karaman</option>
+                        <option value="Kırıkkale">Kırıkkale</option>
+                        <option value="Batman">Batman</option>
+                        <option value="Şırnak">Şırnak</option>
+                        <option value="Bartın">Bartın</option>
+                        <option value="Ardahan">Ardahan</option>
+                        <option value="Iğdır">Iğdır</option>
+                        <option value="Yalova">Yalova</option>
+                        <option value="Karabük">Karabük</option>
+                        <option value="Kilis">Kilis</option>
+                        <option value="Osmaniye">Osmaniye</option>
+                        <option value="Düzce">Düzce</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label for="aircraft-status">19-Hava Aracının Durumu:</label>
+                    <select id="aircraft-status">
+                        <option value="">Lütfen seçim yapınız</option>
+                        <option value="Faal">Faal</option>
+                        <option value="Gayrıfaal">Gayrıfaal</option>
+                    </select>
+                </div>
+                <div id="non-operational-reason" class="form-row hidden">
+                    <label for="non-operational-status">Gayrıfaal Durum Nedeni:</label>
+                    <select id="non-operational-status">
+                        <option value="">Lütfen seçim yapınız</option>
+                        <option value="Bakım">Bakım</option>
+                        <option value="Arıza">Arıza</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label for="personnel-info">20-Defteri dolduran / Günlük Bakım Yapan Personel Bilgisi:</label>
+                    <select id="personnel-info">
+                        <option value="">Lütfen personel seçiniz</option>
+                        <option value="Barış UZUN">Barış UZUN</option>
+                        <option value="Doğan ÖZTÜRK">Doğan ÖZTÜRK</option>
+                        <option value="Kemal CAN">Kemal CAN</option>
+                        <option value="Murat GÜNDÜZ">Murat GÜNDÜZ</option>
+                        <option value="Okan AKÇA">Okan AKÇA</option>
+                        <option value="Ömer ERSOY">Ömer ERSOY</option>
+                        <option value="Önder BİLGİN">Önder BİLGİN</option>
+                        <option value="Yılmaz KARADENİZ">Yılmaz KARADENİZ</option>
+                        <option value="Ali TOPALAN">Ali TOPALAN</option>
+                        <option value="Fatih PARLAK">Fatih PARLAK</option>
+                        <option value="Fatih YAŞBAY">Fatih YAŞBAY</option>
+                        <option value="Özgür UYAR">Özgür UYAR</option>
+                        <option value="Selçuk İBİŞ">Selçuk İBİŞ</option>
+                        <option value="Serdar TOY">Serdar TOY</option>
+                        <option value="Taşkın ÇALIŞIR">Taşkın ÇALIŞIR</option>
+                        <option value="Uğur GÜRCAN">Uğur GÜRCAN</option>
+                        <option value="Ural UÇURUM">Ural UÇURUM</option>
+                        <option value="Yunus EROL">Yunus EROL</option>
+                        <option value="Alper ÖZMETİN">Alper ÖZMETİN</option>
+                        <option value="Özgül ÇAKIL">Özgül ÇAKIL</option>
+                        <option value="Göksel AYTÖRE">Göksel AYTÖRE</option>
+                        <option value="Tezcan GÜZER">Tezcan GÜZER</option>
+                        <option value="Onur YILMAZ">Onur YILMAZ</option>
+                    </select>
+                </div>
+                <button id="save-button" class="update-button">Kaydet</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="success-modal" class="modal-overlay">
+    <div class="modal-content">
+        <h3>Kayıt Başarılı!</h3>
+        <pre id="success-message"></pre>
+        <div style="display: flex; justify-content: space-between; gap: 10px;">
+            <button id="ok-button" class="update-button ok-button" style="flex: 1;">Tamam</button>
+            <button id="download-pdf-button" class="update-button" style="flex: 1;">PDF İndir</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const menuTitles = document.querySelectorAll('.menu-title');
+        const updateScreen = document.getElementById('updateScreen');
+        const updateAircraftHoursMenuItem = document.getElementById('update-aircraft-hours');
+        const closeButton1 = document.getElementById('closeButton1');
+        const closeButton2 = document.getElementById('closeButton2');
+        const aircraftModelSelect = document.getElementById('aircraftModelSelect');
+        const connectedSelect = document.getElementById('connectedSelect');
+        const updateButton = document.getElementById('updateButton');
+        const firstModalContent = document.getElementById('first-modal-content');
+        const secondModalContent = document.getElementById('second-modal-content');
+        const saveButton = document.getElementById('save-button');
+        
+        // Başarılı kayıt modalı öğeleri
+        const successModal = document.getElementById('success-modal');
+        const successMessage = document.getElementById('success-message');
+        const okButton = document.getElementById('ok-button');
+        const downloadPdfButton = document.getElementById('download-pdf-button');
+
+        // Hava aracı durumu ve alt liste öğeleri
+        const aircraftStatusSelect = document.getElementById('aircraft-status');
+        const nonOperationalReasonDiv = document.getElementById('non-operational-reason');
+        const nonOperationalStatusSelect = document.getElementById('non-operational-status');
+        
+        // Personel bilgisi alanı
+        const personnelInfoSelect = document.getElementById('personnel-info');
+
+        // Veri yapısı
+        const aircraftData = {
+            'AT-802': ['OR-2021', 'OR-2022', 'OR-2023', 'OR-2024', 'OR-2025', 'OR-2026', 'OR-2027', 'OR-2028', 'OR-2029', 'OR-2036', 'OR-2038'],
+            'T-70': ['OR-1019', 'OR-1018', 'OR-1020'],
+            'BELL-429': ['OR-3131', 'OR-3126', 'OR-3133']
+        };
+
+        menuTitles.forEach(title => {
+            title.addEventListener('click', () => {
+                const nestedMenu = title.nextElementSibling;
+                if (nestedMenu && nestedMenu.classList.contains('nested-menu')) {
+                    const isOpen = nestedMenu.classList.toggle('open');
+                    title.classList.toggle('active', isOpen);
+                }
+            });
+        });
+
+        // Hava aracı seçimi modalını açma
+        updateAircraftHoursMenuItem.addEventListener('click', () => {
+            updateScreen.style.display = 'flex';
+            firstModalContent.classList.remove('hidden');
+            secondModalContent.classList.add('hidden');
+        });
+
+        // Hava aracı seçimi modalını kapatma
+        closeButton1.addEventListener('click', () => {
+            updateScreen.style.display = 'none';
+        });
+
+        // Hava aracı bilgileri giriş modalını kapatma
+        closeButton2.addEventListener('click', () => {
+            updateScreen.style.display = 'none';
+        });
+
+        // Model seçimine göre kuyruk numaralarını doldurma
+        aircraftModelSelect.addEventListener('change', (event) => {
+            const selectedModel = event.target.value;
+            connectedSelect.innerHTML = '';
+            if (selectedModel in aircraftData) {
+                aircraftData[selectedModel].forEach(tailNumber => {
+                    const option = document.createElement('option');
+                    option.value = tailNumber;
+                    option.textContent = tailNumber;
+                    connectedSelect.appendChild(option);
+                });
+            } else {
+                const defaultOption = document.createElement('option');
+                defaultOption.value = '';
+                defaultOption.textContent = 'Model seçiniz';
+                connectedSelect.appendChild(defaultOption);
+            }
+        });
+
+        // Güncelle butonuna basıldığında ikinci modalı gösterme
+        updateButton.addEventListener('click', () => {
+            const selectedModel = aircraftModelSelect.value;
+            const selectedTailNo = connectedSelect.value;
+
+            if (selectedModel && selectedTailNo) {
+                document.getElementById('selected-model').textContent = `Seçilen Hava Aracı Modeli: ${selectedModel}`;
+                document.getElementById('selected-tailno').textContent = `Seçilen Kuyruk Numarası: ${selectedTailNo}`;
+                
+                // Gerekli alanları temizle ve başlangıç değerlerini ayarla
+                document.getElementById('date-input').value = '';
+                document.getElementById('daily-hours-input').value = '';
+                document.getElementById('daily-engine-hours-input').value = '';
+                document.getElementById('daily-flight-count-input').value = '';
+                document.getElementById('daily-engine-cycles-input').value = '';
+                document.getElementById('daily-landing-count-input').value = '';
+                document.getElementById('engine-start-date').value = '';
+                document.getElementById('mission-location').value = '';
+                aircraftStatusSelect.value = '';
+                nonOperationalReasonDiv.classList.add('hidden');
+                nonOperationalStatusSelect.value = '';
+                personnelInfoSelect.value = '';
+
+                // Hesaplamaları başlangıç değerleriyle yap
+                calculateAndUpdateTotals();
+
+                firstModalContent.classList.add('hidden');
+                secondModalContent.classList.remove('hidden');
+            } else {
+                alert('Lütfen bir hava aracı modeli ve kuyruk numarası seçiniz.');
+            }
+        });
+
+        // Hava aracının durumu değiştiğinde alt listeyi göster/gizle
+        aircraftStatusSelect.addEventListener('change', (event) => {
+            if (event.target.value === 'Gayrıfaal') {
+                nonOperationalReasonDiv.classList.remove('hidden');
+            } else {
+                nonOperationalReasonDiv.classList.add('hidden');
+                nonOperationalStatusSelect.value = ''; // Seçimi temizle
+            }
+        });
+        
+        // Saatleri MM:SS formatından dakika cinsine dönüştüren fonksiyon
+        function timeToMinutes(timeStr) {
+            if (!timeStr) return 0;
+            const parts = timeStr.split(':');
+            return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+        }
+
+        // Dakika cinsinden süreyi HH:MM formatına dönüştüren fonksiyon
+        function minutesToTime(totalMinutes) {
+            if (isNaN(totalMinutes) || totalMinutes < 0) return '00:00';
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+        }
+
+        // Hesaplamaları yapan ve güncelleyen fonksiyon
+        function calculateAndUpdateTotals() {
+            const transferredHoursStr = document.getElementById('transferredHours').textContent;
+            const dailyHoursStr = document.getElementById('daily-hours-input').value;
+            const transferredHoursMinutes = timeToMinutes(transferredHoursStr);
+            const dailyHoursMinutes = timeToMinutes(dailyHoursStr);
+            const totalHoursMinutes = transferredHoursMinutes + dailyHoursMinutes;
+            document.getElementById('totalHours').textContent = minutesToTime(totalHoursMinutes);
+
+            const transferredEngineHoursStr = document.getElementById('transferredEngineHours').textContent;
+            const dailyEngineHoursStr = document.getElementById('daily-engine-hours-input').value;
+            const transferredEngineHoursMinutes = timeToMinutes(transferredEngineHoursStr);
+            const dailyEngineHoursMinutes = timeToMinutes(dailyEngineHoursStr);
+            const totalEngineHoursMinutes = transferredEngineHoursMinutes + dailyEngineHoursMinutes;
+            document.getElementById('totalEngineHours').textContent = minutesToTime(totalEngineHoursMinutes);
+            
+            const transferredFlightCount = parseInt(document.getElementById('transferredFlightCount').textContent);
+            const dailyFlightCount = parseInt(document.getElementById('daily-flight-count-input').value) || 0;
+            const totalFlightCount = transferredFlightCount + dailyFlightCount;
+            document.getElementById('totalFlightCount').textContent = totalFlightCount;
+
+            const transferredEngineCycles = parseInt(document.getElementById('transferredEngineCycles').textContent);
+            const dailyEngineCycles = parseInt(document.getElementById('daily-engine-cycles-input').value) || 0;
+            const totalEngineCycles = transferredEngineCycles + dailyEngineCycles;
+            document.getElementById('totalEngineCycles').textContent = totalEngineCycles;
+
+            const transferredLandingCount = parseInt(document.getElementById('transferredLandingCount').textContent);
+            const dailyLandingCount = parseInt(document.getElementById('daily-landing-count-input').value) || 0;
+            const totalLandingCount = transferredLandingCount + dailyLandingCount;
+            document.getElementById('totalLandingCount').textContent = totalLandingCount;
+        }
+
+        // Input alanları değiştiğinde hesaplamaları otomatik yap
+        document.getElementById('daily-hours-input').addEventListener('input', calculateAndUpdateTotals);
+        document.getElementById('daily-engine-hours-input').addEventListener('input', calculateAndUpdateTotals);
+        document.getElementById('daily-flight-count-input').addEventListener('input', calculateAndUpdateTotals);
+        document.getElementById('daily-engine-cycles-input').addEventListener('input', calculateAndUpdateTotals);
+        document.getElementById('daily-landing-count-input').addEventListener('input', calculateAndUpdateTotals);
+
+        // Kaydet butonuna basıldığında kayıt işlemini gerçekleştir ve uyarı modalını göster
+        saveButton.addEventListener('click', () => {
+            const selectedModel = aircraftModelSelect.value;
+            const selectedTailNo = connectedSelect.value;
+            const date = document.getElementById('date-input').value;
+            const dailyHours = document.getElementById('daily-hours-input').value;
+            const totalHours = document.getElementById('totalHours').textContent;
+            const dailyEngineHours = document.getElementById('daily-engine-hours-input').value;
+            const totalEngineHours = document.getElementById('totalEngineHours').textContent;
+            const dailyFlightCount = document.getElementById('daily-flight-count-input').value;
+            const totalFlightCount = document.getElementById('totalFlightCount').textContent;
+            const dailyEngineCycles = document.getElementById('daily-engine-cycles-input').value;
+            const totalEngineCycles = document.getElementById('totalEngineCycles').textContent;
+            const dailyLandingCount = document.getElementById('daily-landing-count-input').value;
+            const totalLandingCount = document.getElementById('totalLandingCount').textContent;
+            const engineStartDate = document.getElementById('engine-start-date').value;
+            const missionLocation = document.getElementById('mission-location').value;
+            const aircraftStatus = aircraftStatusSelect.value;
+            const nonOperationalStatus = nonOperationalStatusSelect.value;
+            const personnelInfo = personnelInfoSelect.value;
+
+            // Alanların boş olup olmadığını kontrol et
+            let isFormValid = true;
+            if (!date || !dailyHours || !dailyEngineHours || !dailyFlightCount || !dailyEngineCycles || !dailyLandingCount || !engineStartDate || !missionLocation || !aircraftStatus || !personnelInfo) {
+                isFormValid = false;
+            }
+            if (aircraftStatus === 'Gayrıfaal' && !nonOperationalStatus) {
+                isFormValid = false;
+            }
+
+            if (isFormValid) {
+                let statusMessage = `Hava Aracı Durumu: ${aircraftStatus}`;
+                if (aircraftStatus === 'Gayrıfaal') {
+                    statusMessage += `\nGayrıfaal Durum Nedeni: ${nonOperationalStatus}`;
+                }
+
+                const message = `
+Hava Aracı: ${selectedTailNo} (${selectedModel})
+Tarih: ${date}
+Günlük Uçuş Saati: ${dailyHours}
+Toplam Uçuş Saati: ${totalHours}
+Günlük Motor Saati: ${dailyEngineHours}
+Toplam Motor Saati: ${totalEngineHours}
+Günlük Uçuş Sayısı: ${dailyFlightCount}
+Toplam Uçuş Sayısı: ${totalFlightCount}
+Günlük Motor Çalıştırma Sayısı: ${dailyEngineCycles}
+Toplam Motor Çalıştırma Sayısı: ${totalEngineCycles}
+Günlük İniş Sayısı: ${dailyLandingCount}
+Toplam İniş Sayısı: ${totalLandingCount}
+Son Motor Çalıştırma Tarihi: ${engineStartDate}
+Görev Yeri: ${missionLocation}
+${statusMessage}
+Defteri dolduran personel: ${personnelInfo}
+`;
+                successMessage.textContent = message;
+                successModal.style.display = 'flex';
+                updateScreen.style.display = 'none'; // Ana modalı gizle
+            } else {
+                alert('Lütfen tüm gerekli alanları doldurun.');
+            }
+        });
+
+        // Başarılı kayıt modalını kapatma
+        okButton.addEventListener('click', () => {
+            successModal.style.display = 'none';
+        });
+
+        // PDF İndir butonuna tıklama olayı
+        downloadPdfButton.addEventListener('click', () => {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            const selectedTailNo = document.getElementById('selected-tailno').textContent.replace('Seçilen Kuyruk Numarası: ', '');
+            const messageText = successMessage.textContent;
+            const lines = messageText.split('\n').filter(line => line.trim() !== '');
+
+            let y = 20;
+
+            // Başlık
+            doc.setFontSize(16);
+            doc.text("ORMAN GENEL MÜDÜRLÜĞÜ HAVACILIK DAİRESİ", 105, y, { align: "center" });
+            y += 10;
+            doc.setFontSize(14);
+            doc.text("FAYDALI SAAT RAPORU", 105, y, { align: "center" });
+            y += 20;
+
+            // İçerik
+            doc.setFontSize(12);
+            lines.forEach(line => {
+                doc.text(line.trim(), 20, y);
+                y += 10;
+            });
+            
+            doc.save(`Faydali_Saat_Raporu_${selectedTailNo}.pdf`);
+            
+            // PDF indirme işlemi bittikten sonra modalı kapat
+            successModal.style.display = 'none';
+        });
+
+    });
+</script>
+
+</body>
+</html>
