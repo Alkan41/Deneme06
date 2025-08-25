@@ -64,7 +64,7 @@
             background-color: #fafafa;
         }
         .nested-menu.open {
-            max-height: 500px; 
+            max-height: 500px;
         }
         .nested-menu-item {
             padding: 10px 30px;
@@ -137,7 +137,7 @@
             box-shadow: 0 0 5px rgba(0,123,255,0.25);
         }
         .form-row input.filled {
-            border-color: #28a745; 
+            border-color: #28a745;
         }
         .form-row label.filled {
             color: #28a745;
@@ -179,7 +179,7 @@
             color: #007bff;
         }
         .total-box.green {
-            color: #28a745; 
+            color: #28a745;
         }
         .total-hours-container {
             display: flex;
@@ -360,7 +360,7 @@
                     <option value="Müfreze">Müfreze</option>
                 </select>
             </div>
-            
+
             <div class="form-row">
                 <label for="aircraft-status">Hava Aracı Durumu:</label>
                 <select id="aircraft-status">
@@ -380,7 +380,7 @@
                     <option value="Personel Eksikliği">Personel Eksikliği</option>
                 </select>
             </div>
-            
+
             <div class="form-row">
                 <label for="personnel-info">Defteri Dolduran Personel:</label>
                 <select id="personnel-info">
@@ -397,7 +397,7 @@
                 <input type="checkbox" id="engine-start-only-checkbox">
                 <label for="engine-start-only-checkbox">Sadece Motor Çalıştırma</label>
             </div>
-            
+
             <div class="checkbox-row">
                 <input type="checkbox" id="frds-control-only-checkbox">
                 <label for="frds-control-only-checkbox">Sadece FRDS Kontrolü</label>
@@ -448,7 +448,7 @@
                         <input type="date" id="engine-start-date">
                     </div>
                 </fieldset>
-                
+
                 <fieldset>
                     <legend>Pervane</legend>
                     <div class="form-row">
@@ -481,7 +481,7 @@
                     </div>
                 </fieldset>
             </div>
-            
+
             <div class="form-row">
                 <label>Aktarılan Uçuş Sayısı:</label>
                 <span id="transferredFlightCount">0</span>
@@ -530,19 +530,19 @@
             const firstModalContent = document.getElementById('first-modal-content');
             const secondModalContent = document.getElementById('second-modal-content');
             const saveButton = document.getElementById('save-button');
-    
+
             const successModal = document.getElementById('success-modal');
             const successMessage = document.getElementById('success-message');
             const okButton = document.getElementById('ok-button');
             const downloadPdfButton = document.getElementById('download-pdf-button');
             const pdfContentArea = document.getElementById('pdf-content-area');
-    
+
             const aircraftStatusSelect = document.getElementById('aircraft-status');
             const nonOperationalReasonDiv = document.getElementById('non-operational-reason');
             const nonOperationalStatusSelect = document.getElementById('non-operational-status');
-    
+
             const personnelInfoSelect = document.getElementById('personnel-info');
-    
+
             const dailyHoursInput = document.getElementById('daily-hours-input');
             const dailyEngineHoursInput = document.getElementById('daily-engine-hours-input');
             const dailyPropellerHoursInput = document.getElementById('daily-propeller-hours-input');
@@ -553,12 +553,12 @@
             const engineStartDateInput = document.getElementById('engine-start-date');
             const frdsControlDateInput = document.getElementById('frds-control-date');
             const missionLocationSelect = document.getElementById('mission-location');
-            
+
             const engineStartOnlyCheckbox = document.getElementById('engine-start-only-checkbox');
             const frdsControlOnlyCheckbox = document.getElementById('frds-control-only-checkbox');
-            
+
             const fieldsets = document.querySelectorAll('.fieldset-container fieldset');
-    
+
             const totalBoxes = [
                 document.getElementById('totalHours'),
                 document.getElementById('totalEngineHours'),
@@ -567,20 +567,20 @@
                 document.getElementById('totalEngineCycles'),
                 document.getElementById('totalLandingCount')
             ];
-            
+
             const dailyInputs = [
                 dailyHoursInput, dailyEngineHoursInput, dailyPropellerHoursInput,
                 dailyFlightCountInput, dailyEngineCyclesInput, dailyLandingCountInput
             ];
-            
+
             const rowIdInput = document.getElementById('rowId');
-    
+
             const aircraftData = {
                 'AT-802': ['OR-2021', 'OR-2022', 'OR-2023', 'OR-2024', 'OR-2025', 'OR-2026', 'OR-2027', 'OR-2028', 'OR-2029', 'OR-2036', 'OR-2038'],
                 'T-70': ['OR-1019', 'OR-1018', 'OR-1020'],
                 'BELL-429': ['OR-3131', 'OR-3126', 'OR-3133']
             };
-    
+
             menuTitles.forEach(title => {
                 title.addEventListener('click', () => {
                     const nestedMenu = title.nextElementSibling;
@@ -590,21 +590,21 @@
                     }
                 });
             });
-    
+
             updateAircraftHoursMenuItem.addEventListener('click', () => {
                 updateScreen.style.display = 'flex';
                 firstModalContent.classList.remove('hidden');
                 secondModalContent.classList.add('hidden');
             });
-    
+
             closeButton1.addEventListener('click', () => {
                 updateScreen.style.display = 'none';
             });
-    
+
             closeButton2.addEventListener('click', () => {
                 updateScreen.style.display = 'none';
             });
-    
+
             aircraftModelSelect.addEventListener('change', (event) => {
                 const selectedModel = event.target.value;
                 connectedSelect.innerHTML = '';
@@ -622,19 +622,19 @@
                     connectedSelect.appendChild(defaultOption);
                 }
             });
-    
+
             updateButton.addEventListener('click', () => {
                 const selectedModel = aircraftModelSelect.value;
                 const selectedTailNo = connectedSelect.value;
-                
+
                 if (!selectedModel || !selectedTailNo) {
                     alert('Lütfen bir hava aracı modeli ve kuyruk numarası seçiniz.');
                     return;
                 }
-    
+
                 document.getElementById('selected-model').textContent = `Seçilen Hava Aracı Modeli: ${selectedModel}`;
                 document.getElementById('selected-tailno').textContent = `Seçilen Kuyruk Numarası: ${selectedTailNo}`;
-    
+
                 dateInput.value = '';
                 engineStartDateInput.value = '';
                 frdsControlDateInput.value = '';
@@ -643,34 +643,34 @@
                 nonOperationalReasonDiv.classList.add('hidden');
                 nonOperationalStatusSelect.value = '';
                 personnelInfoSelect.value = '';
-                
+
                 dailyInputs.forEach(input => {
                     input.value = '';
                     input.classList.remove('filled');
                     const label = document.querySelector(`label[for="${input.id}"]`);
                     if (label) label.classList.remove('filled');
                 });
-    
+
                 rowIdInput.value = '';
                 engineStartOnlyCheckbox.checked = false;
                 frdsControlOnlyCheckbox.checked = false;
                 fieldsets.forEach(fieldset => fieldset.classList.remove('faded-fieldset'));
                 dailyInputs.forEach(input => input.disabled = false);
-    
+
                 const today = new Date().toISOString().slice(0, 10);
                 dateInput.value = today;
                 engineStartDateInput.value = today;
                 frdsControlDateInput.value = today;
-    
+
                 updateTotalBoxColors();
-    
+
                 calculateAndUpdateTotals();
                 checkFormValidity();
-    
+
                 firstModalContent.classList.add('hidden');
                 secondModalContent.classList.remove('hidden');
             });
-    
+
             aircraftStatusSelect.addEventListener('change', (event) => {
                 if (event.target.value === 'Gayrıfaal') {
                     nonOperationalReasonDiv.classList.remove('hidden');
@@ -680,14 +680,14 @@
                 }
                 checkFormValidity();
             });
-            
+
             function checkFormValidity() {
                 let isFormValid = true;
-                
+
                 const requiredFields = [
                     dateInput, engineStartDateInput, frdsControlDateInput, missionLocationSelect, aircraftStatusSelect, personnelInfoSelect
                 ];
-                
+
                 if (!engineStartOnlyCheckbox.checked && !frdsControlOnlyCheckbox.checked) {
                      dailyInputs.forEach(field => {
                         if (field.value.trim() === '') {
@@ -695,20 +695,20 @@
                         }
                     });
                 }
-    
+
                 requiredFields.forEach(field => {
                     if (field.value.trim() === '') {
                         isFormValid = false;
                     }
                 });
-                
+
                 if (aircraftStatusSelect.value === 'Gayrıfaal' && nonOperationalStatusSelect.value.trim() === '') {
                     isFormValid = false;
                 }
-    
+
                 saveButton.disabled = !isFormValid;
             }
-            
+
             function timeToMinutes(timeStr) {
                 if (!timeStr) return 0;
                 const parts = timeStr.split(':');
@@ -716,14 +716,14 @@
                 const minutes = parseInt(parts[1]) || 0;
                 return hours * 60 + minutes;
             }
-    
+
             function minutesToTime(totalMinutes) {
                 if (isNaN(totalMinutes) || totalMinutes < 0) return '00:00';
                 const hours = Math.floor(totalMinutes / 60);
                 const minutes = totalMinutes % 60;
                 return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
             }
-    
+
             function calculateAndUpdateTotals() {
                 const transferredHoursStr = document.getElementById('transferredHours').textContent;
                 const dailyHoursStr = dailyHoursInput.value;
@@ -731,39 +731,39 @@
                 const dailyHoursMinutes = timeToMinutes(dailyHoursStr);
                 const totalHoursMinutes = transferredHoursMinutes + dailyHoursMinutes;
                 document.getElementById('totalHours').textContent = minutesToTime(totalHoursMinutes);
-    
+
                 const transferredEngineHoursStr = document.getElementById('transferredEngineHours').textContent;
                 const dailyEngineHoursStr = dailyEngineHoursInput.value;
                 const transferredEngineHoursMinutes = timeToMinutes(transferredEngineHoursStr);
                 const dailyEngineHoursMinutes = timeToMinutes(dailyEngineHoursStr);
                 const totalEngineHoursMinutes = transferredEngineHoursMinutes + dailyEngineHoursMinutes;
                 document.getElementById('totalEngineHours').textContent = minutesToTime(totalEngineHoursMinutes);
-                
+
                 const transferredPropellerHoursStr = document.getElementById('transferredPropellerHours').textContent;
                 const dailyPropellerHoursStr = dailyPropellerHoursInput.value;
                 const transferredPropellerHoursMinutes = timeToMinutes(transferredPropellerHoursStr);
                 const dailyPropellerHoursMinutes = timeToMinutes(dailyPropellerHoursStr);
                 const totalPropellerHoursMinutes = transferredPropellerHoursMinutes + dailyPropellerHoursMinutes;
                 document.getElementById('totalPropellerHours').textContent = minutesToTime(totalPropellerHoursMinutes);
-    
+
                 const transferredFlightCount = parseInt(document.getElementById('transferredFlightCount').textContent);
                 const dailyFlightCount = parseInt(dailyFlightCountInput.value) || 0;
                 const totalFlightCount = transferredFlightCount + dailyFlightCount;
                 document.getElementById('totalFlightCount').textContent = totalFlightCount;
-    
+
                 const transferredEngineCycles = parseInt(document.getElementById('transferredEngineCycles').textContent);
                 const dailyEngineCycles = parseInt(dailyEngineCyclesInput.value) || 0;
                 const totalEngineCycles = transferredEngineCycles + dailyEngineCycles;
                 document.getElementById('totalEngineCycles').textContent = totalEngineCycles;
-    
+
                 const transferredLandingCount = parseInt(document.getElementById('transferredLandingCount').textContent);
                 const dailyLandingCount = parseInt(dailyLandingCountInput.value) || 0;
                 const totalLandingCount = transferredLandingCount + dailyLandingCount;
                 document.getElementById('totalLandingCount').textContent = totalLandingCount;
-                
+
                 updateTotalBoxColors();
             }
-            
+
             function updateTotalBoxColors() {
                 const boxes = [
                     {input: dailyHoursInput, total: document.getElementById('totalHours')},
@@ -781,12 +781,12 @@
                     }
                 });
             }
-    
+
             const highlightInputs = [
                 dailyHoursInput, dailyEngineHoursInput, dailyPropellerHoursInput,
                 dailyFlightCountInput, dailyEngineCyclesInput, dailyLandingCountInput
             ];
-    
+
             highlightInputs.forEach(input => {
                 const label = document.querySelector(`label[for="${input.id}"]`);
                 input.addEventListener('input', () => {
@@ -794,7 +794,7 @@
                         dailyEngineHoursInput.value = input.value;
                         dailyPropellerHoursInput.value = input.value;
                     }
-                    
+
                     if (input.value.trim() !== '') {
                         input.classList.add('filled');
                         if (label) {
@@ -806,12 +806,12 @@
                             label.classList.remove('filled');
                         }
                     }
-    
+
                     calculateAndUpdateTotals();
                     checkFormValidity();
                 });
             });
-            
+
             document.querySelectorAll('#second-modal-content input, #second-modal-content select').forEach(field => {
                 field.addEventListener('change', checkFormValidity);
                 if (field.id.includes('hours-input')) {
@@ -824,10 +824,10 @@
                     });
                 }
             });
-    
+
             function handleSpecialMode() {
                 const isSpecialModeActive = engineStartOnlyCheckbox.checked || frdsControlOnlyCheckbox.checked;
-    
+
                 if (isSpecialModeActive) {
                     if (engineStartOnlyCheckbox.checked) {
                         frdsControlOnlyCheckbox.checked = false;
@@ -835,7 +835,7 @@
                     if (frdsControlOnlyCheckbox.checked) {
                         engineStartOnlyCheckbox.checked = false;
                     }
-                    
+
                     fieldsets.forEach(fieldset => fieldset.classList.add('faded-fieldset'));
                     dailyInputs.forEach(input => {
                         input.disabled = true;
@@ -865,17 +865,17 @@
                 calculateAndUpdateTotals();
                 checkFormValidity();
             }
-    
+
             engineStartOnlyCheckbox.addEventListener('change', handleSpecialMode);
             frdsControlOnlyCheckbox.addEventListener('change', handleSpecialMode);
-    
+
             saveButton.addEventListener('click', () => {
                 checkFormValidity();
                 if (saveButton.disabled) {
                     alert('Lütfen tüm gerekli alanları doldurun.');
                     return;
                 }
-                
+
                 const selectedModel = aircraftModelSelect.value;
                 const selectedTailNo = connectedSelect.value;
                 const date = dateInput.value;
@@ -898,7 +898,7 @@
                 const nonOperationalStatus = nonOperationalStatusSelect.value;
                 const personnelInfo = personnelInfoSelect.value;
                 const rowId = rowIdInput.value;
-    
+
                 const formData = {
                     rowId: rowId,
                     model: selectedModel,
@@ -923,9 +923,9 @@
                     nonOperationalStatus: nonOperationalStatus,
                     personnelInfo: personnelInfo
                 };
-    
+
                 const webAppUrl = 'https://script.google.com/macros/s/AKfycbwnmLv-d-mh0eUOJrSrDFZtFgmQCZ9LeAVCnBQfkvTDMIATRoN43W7sc_cnViMdB8XTpw/exec';
-    
+
                 fetch(webAppUrl, {
                     method: 'POST',
                     headers: {
@@ -968,47 +968,47 @@
                     alert('Veri kaydedilirken bir hata oluştu. Lütfen tekrar deneyin.');
                 });
             });
-    
+
             okButton.addEventListener('click', () => {
                 successModal.style.display = 'none';
                 updateScreen.style.display = 'none';
             });
-    
+
             downloadPdfButton.addEventListener('click', () => {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF('p', 'mm', 'a4');
-                
+
                 const pdfSource = document.getElementById('pdf-content-area');
                 const selectedTailNo = document.getElementById('selected-tailno').textContent.replace('Seçilen Kuyruk Numarası: ', '');
-                
+
                 saveButton.style.display = 'none';
-    
+
                 const options = {
                     scale: 2,
                     useCORS: true,
                     backgroundColor: '#ffffff'
                 };
-    
+
                 html2canvas(pdfSource, options).then(canvas => {
                     const imgData = canvas.toDataURL('image/png');
-                    const imgWidth = 210; 
-                    const pageHeight = 295;  
+                    const imgWidth = 210;
+                    const pageHeight = 295;
                     const imgHeight = (canvas.height * imgWidth) / canvas.width;
                     let heightLeft = imgHeight;
                     let position = 0;
-    
+
                     doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
                     heightLeft -= pageHeight;
-    
+
                     while (heightLeft >= 0) {
                         position = heightLeft - imgHeight;
                         doc.addPage();
                         doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
                         heightLeft -= pageHeight;
                     }
-    
+
                     doc.save(`Faydali_Saat_Raporu_${selectedTailNo}.pdf`);
-    
+
                     saveButton.style.display = '';
                     successModal.style.display = 'none';
                     updateScreen.style.display = 'none';
