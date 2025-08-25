@@ -837,9 +837,6 @@
         const downloadPdfButton = document.getElementById('download-pdf-button');
         const pdfContentArea = document.getElementById('pdf-content-area');
 
-        // **YENİ: Google Apps Script URL'si**
-        // Bu URL'yi kendi Google Apps Script dağıtım URL'nizle değiştirin.
-        const googleSheetUrl = 'https://script.google.com/macros/s/AKfycbwuEkl3xkmd5KhJhFwUUz6N1UoiQruDzGwMew6rfnFPBwfK5xaMIryyW06XkpS3yTHHzw/exec';
 
         // Hava aracı durumu ve alt liste öğeleri
         const aircraftStatusSelect = document.getElementById('aircraft-status');
@@ -1216,68 +1213,66 @@
         engineStartOnlyCheckbox.addEventListener('change', handleSpecialMode);
         frdsControlOnlyCheckbox.addEventListener('change', handleSpecialMode);
 
-        // **YENİ: Kaydet butonuna basıldığında kayıt işlemini gerçekleştir**
+        // Kaydet butonuna basıldığında kayıt işlemini gerçekleştir ve uyarı modalını göster
         saveButton.addEventListener('click', () => {
-            saveButton.disabled = true;
-            saveButton.textContent = 'Kaydediliyor...';
+            // Form validasyonunu tekrar kontrol et
+            checkFormValidity();
+            if (saveButton.disabled) {
+                alert('Lütfen tüm gerekli alanları doldurun.');
+                return;
+            }
             
-            const formData = new URLSearchParams();
-            formData.append('Hava Aracı Modeli', aircraftModelSelect.value);
-            formData.append('Hava Aracı Kuyruk No', connectedSelect.value);
-            formData.append('Tarih', dateInput.value);
-            formData.append('Günlük Uçuş Saati', dailyHoursInput.value);
-            formData.append('Toplam Uçuş Saati', document.getElementById('totalHours').textContent);
-            formData.append('Günlük Motor Saati', dailyEngineHoursInput.value);
-            formData.append('Toplam Motor Saati', document.getElementById('totalEngineHours').textContent);
-            formData.append('Günlük Pervane Saati', dailyPropellerHoursInput.value);
-            formData.append('Toplam Pervane Saati', document.getElementById('totalPropellerHours').textContent);
-            formData.append('Günlük Uçuş Sayısı', dailyFlightCountInput.value);
-            formData.append('Toplam Uçuş Sayısı', document.getElementById('totalFlightCount').textContent);
-            formData.append('Günlük Motor Çalıştırma Sayısı', dailyEngineCyclesInput.value);
-            formData.append('Toplam Motor Çalıştırma Sayısı', document.getElementById('totalEngineCycles').textContent);
-            formData.append('Günlük İniş Sayısı', dailyLandingCountInput.value);
-            formData.append('Toplam İniş Sayısı', document.getElementById('totalLandingCount').textContent);
-            formData.append('En Son Motor Çalıştırma Tarihi', engineStartDateInput.value);
-            formData.append('En son FRDS kontrol Tarihi', frdsControlDateInput.value);
-            formData.append('Görev Yeri', missionLocationSelect.value);
-            formData.append('Hava Aracının Durumu', aircraftStatusSelect.value);
-            formData.append('Gayrıfaal Durum Nedeni', nonOperationalStatusSelect.value);
-            formData.append('Defteri dolduran personel', personnelInfoSelect.value);
+            const selectedModel = aircraftModelSelect.value;
+            const selectedTailNo = connectedSelect.value;
+            const date = dateInput.value;
+            const dailyHours = dailyHoursInput.value;
+            const totalHours = document.getElementById('totalHours').textContent;
+            const dailyEngineHours = dailyEngineHoursInput.value;
+            const totalEngineHours = document.getElementById('totalEngineHours').textContent;
+            const dailyPropellerHours = dailyPropellerHoursInput.value;
+            const totalPropellerHours = document.getElementById('totalPropellerHours').textContent;
+            const dailyFlightCount = dailyFlightCountInput.value;
+            const totalFlightCount = document.getElementById('totalFlightCount').textContent;
+            const dailyEngineCycles = dailyEngineCyclesInput.value;
+            const totalEngineCycles = document.getElementById('totalEngineCycles').textContent;
+            const dailyLandingCount = dailyLandingCountInput.value;
+            const totalLandingCount = document.getElementById('totalLandingCount').textContent;
+            const engineStartDate = engineStartDateInput.value;
+            const frdsControlDate = frdsControlDateInput.value;
+            const missionLocation = missionLocationSelect.value;
+            const aircraftStatus = aircraftStatusSelect.value;
+            const nonOperationalStatus = nonOperationalStatusSelect.value;
+            const personnelInfo = personnelInfoSelect.value;
 
-            // Fetch API ile veriyi Google Apps Script'e gönder
-            fetch(googleSheetUrl, {
-                method: 'POST',
-                body: formData,
-            })
-            .then(response => response.json())
-            .then(data => {
-                saveButton.disabled = false;
-                saveButton.textContent = 'Kaydet';
-                if (data.result === 'success') {
-                    showSuccessModal();
-                } else {
-                    alert('Kayıt başarısız oldu: ' + data.message);
-                }
-            })
-            .catch(error => {
-                saveButton.disabled = false;
-                saveButton.textContent = 'Kaydet';
-                alert('Bir hata oluştu. Lütfen konsolu kontrol edin.');
-                console.error('Hata:', error);
-            });
-        });
-        
-        function showSuccessModal() {
+            let statusMessage = `Hava Aracı Durumu: ${aircraftStatus}`;
+            if (aircraftStatus === 'Gayrıfaal') {
+                statusMessage += `\nGayrıfaal Durum Nedeni: ${nonOperationalStatus}`;
+            }
+
             const message = `
-Hava Aracı: ${connectedSelect.value} (${aircraftModelSelect.value})
-Tarih: ${dateInput.value}
-Günlük Uçuş Saati: ${dailyHoursInput.value}
-Toplam Uçuş Saati: ${document.getElementById('totalHours').textContent}
-... (diğer bilgiler)
+Hava Aracı: ${selectedTailNo} (${selectedModel})
+Tarih: ${date}
+Günlük Uçuş Saati: ${dailyHours}
+Toplam Uçuş Saati: ${totalHours}
+Günlük Motor Saati: ${dailyEngineHours}
+Toplam Motor Saati: ${totalEngineHours}
+Günlük Pervane Saati: ${dailyPropellerHours}
+Toplam Pervane Saati: ${totalPropellerHours}
+Günlük Uçuş Sayısı: ${dailyFlightCount}
+Toplam Uçuş Sayısı: ${totalFlightCount}
+Günlük Motor Çalıştırma Sayısı: ${dailyEngineCycles}
+Toplam Motor Çalıştırma Sayısı: ${totalEngineCycles}
+Günlük İniş Sayısı: ${dailyLandingCount}
+Toplam İniş Sayısı: ${totalLandingCount}
+Son Motor Çalıştırma Tarihi: ${engineStartDate}
+En son FRDS kontrol Tarihi: ${frdsControlDate}
+Görev Yeri: ${missionLocation}
+${statusMessage}
+Defteri dolduran personel: ${personnelInfo}
 `;
             successMessage.textContent = message;
             successModal.style.display = 'flex';
-        }
+        });
 
         // Başarılı kayıt modalını kapatma
         okButton.addEventListener('click', () => {
@@ -1293,8 +1288,13 @@ Toplam Uçuş Saati: ${document.getElementById('totalHours').textContent}
             const pdfSource = document.getElementById('pdf-content-area');
             const selectedTailNo = document.getElementById('selected-tailno').textContent.replace('Seçilen Kuyruk Numarası: ', '');
             
-            // "Kaydet" butonunu gizle
+            // Gizli modaldaki content'i geçici olarak görünür yap
+            const secondModal = document.getElementById('second-modal-content');
+            secondModal.classList.remove('hidden');
+
+            // "Kaydet" ve "PDF İndir" butonlarını gizle
             saveButton.style.display = 'none';
+            downloadPdfButton.style.display = 'none';
 
             // html2canvas'a gönderilecek seçenekler
             const options = {
@@ -1323,15 +1323,13 @@ Toplam Uçuş Saati: ${document.getElementById('totalHours').textContent}
 
                 doc.save(`Faydali_Saat_Raporu_${selectedTailNo}.pdf`);
 
-                // PDF indirme işlemi bittikten sonra "Kaydet" butonunu tekrar göster ve modalı kapat
-                saveButton.style.display = '';
-                successModal.style.display = 'none';
-                updateScreen.style.display = 'none';
             }).catch(error => {
                 console.error("PDF oluşturulurken hata oluştu:", error);
                 alert("PDF oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.");
-                // Hata oluştuğunda da butonu tekrar göster
+            }).finally(() => {
+                // İşlem bittikten sonra butonları ve modalı eski haline getir
                 saveButton.style.display = '';
+                downloadPdfButton.style.display = '';
                 successModal.style.display = 'none';
                 updateScreen.style.display = 'none';
             });
