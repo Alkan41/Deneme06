@@ -1180,15 +1180,15 @@
 
             fetch(googleSheetUrl, {
                 method: 'POST',
-                mode: 'no-cors',
                 body: formData
-            }).then(() => {
-                 let statusMessage = `Hava Aracı Durumu: ${aircraftStatus}`;
-                if (aircraftStatus === 'Gayrıfaal') {
-                    statusMessage += `\nGayrıfaal Durum Nedeni: ${nonOperationalStatus}`;
-                }
+            }).then(response => {
+                if (response.ok) {
+                    let statusMessage = `Hava Aracı Durumu: ${aircraftStatus}`;
+                    if (aircraftStatus === 'Gayrıfaal') {
+                        statusMessage += `\nGayrıfaal Durum Nedeni: ${nonOperationalStatus}`;
+                    }
 
-                const message = `
+                    const message = `
 Hava Aracı: ${selectedTailNo} (${selectedModel})
 Tarih: ${date}
 Günlük Uçuş Saati: ${dailyHours}
@@ -1209,10 +1209,13 @@ Görev Yeri: ${missionLocation}
 ${statusMessage}
 Defteri dolduran personel: ${personnelInfo}
 `;
-                successMessage.textContent = message;
-                successModal.style.display = 'flex';
+                    successMessage.textContent = message;
+                    successModal.style.display = 'flex';
+                } else {
+                    alert('Veri kaydedilirken bir hata oluştu: Sunucu yanıtı olumsuz.');
+                }
             }).catch(error => {
-                alert('Veri kaydedilirken bir hata oluştu: ' + error.message);
+                alert('Veri kaydedilirken bir ağ hatası oluştu: ' + error.message);
                 console.error('Fetch error:', error);
             });
         });
@@ -1273,4 +1276,3 @@ Defteri dolduran personel: ${personnelInfo}
 
 </body>
 </html>
-
