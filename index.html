@@ -1243,13 +1243,55 @@
             const aircraftStatus = aircraftStatusSelect.value;
             const nonOperationalStatus = nonOperationalStatusSelect.value;
             const personnelInfo = personnelInfoSelect.value;
-
-            let statusMessage = `Hava Aracı Durumu: ${aircraftStatus}`;
+            
+            let statusMessage = `${aircraftStatus}`;
             if (aircraftStatus === 'Gayrıfaal') {
-                statusMessage += `\nGayrıfaal Durum Nedeni: ${nonOperationalStatus}`;
+                statusMessage += ` - ${nonOperationalStatus}`;
             }
 
-            const message = `
+            // Verileri JSON objesi olarak hazırlar
+            const formData = {
+                model: selectedModel,
+                tailNo: selectedTailNo,
+                date: date,
+                dailyHours: dailyHours,
+                totalHours: totalHours,
+                dailyEngineHours: dailyEngineHours,
+                totalEngineHours: totalEngineHours,
+                dailyPropellerHours: dailyPropellerHours,
+                totalPropellerHours: totalPropellerHours,
+                dailyFlightCount: dailyFlightCount,
+                totalFlightCount: totalFlightCount,
+                dailyEngineCycles: dailyEngineCycles,
+                totalEngineCycles: totalEngineCycles,
+                dailyLandingCount: dailyLandingCount,
+                totalLandingCount: totalLandingCount,
+                engineStartDate: engineStartDate,
+                frdsControlDate: frdsControlDate,
+                missionLocation: missionLocation,
+                aircraftStatus: statusMessage,
+                personnelInfo: personnelInfo
+            };
+
+            // Google Sheets'e veri gönderme işlemi
+            const googleAppsScriptUrl = 'https://script.google.com/macros/s/AKfycbyB3C0SeMIoxCa8kPBC5f6EWnia9KgjYt1aOhJciU9X/dev';
+
+            // Yükleme sırasında butonu devre dışı bırak
+            saveButton.disabled = true;
+            saveButton.textContent = 'Veri Gönderiliyor...';
+
+            fetch(googleAppsScriptUrl, {
+                method: 'POST',
+                mode: 'no-cors', // Bu önemli, CORS hatası almamak için
+                cache: 'no-cache',
+                credentials: 'omit',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(() => {
+                const message = `
 Hava Aracı: ${selectedTailNo} (${selectedModel})
 Tarih: ${date}
 Günlük Uçuş Saati: ${dailyHours}
@@ -1264,14 +1306,25 @@ Günlük Motor Çalıştırma Sayısı: ${dailyEngineCycles}
 Toplam Motor Çalıştırma Sayısı: ${totalEngineCycles}
 Günlük İniş Sayısı: ${dailyLandingCount}
 Toplam İniş Sayısı: ${totalLandingCount}
-Son Motor Çalıştırma Tarihi: ${engineStartDate}
+En Son Motor Çalıştırma Tarihi: ${engineStartDate}
 En son FRDS kontrol Tarihi: ${frdsControlDate}
 Görev Yeri: ${missionLocation}
-${statusMessage}
+Hava Aracı Durumu: ${statusMessage}
 Defteri dolduran personel: ${personnelInfo}
 `;
-            successMessage.textContent = message;
-            successModal.style.display = 'flex';
+                successMessage.textContent = message;
+                successModal.style.display = 'flex';
+                // İşlem başarılı, butonu tekrar eski haline getir
+                saveButton.disabled = false;
+                saveButton.textContent = 'Kaydet';
+            })
+            .catch(error => {
+                console.error('Veri gönderme hatası:', error);
+                alert('Veri kaydedilirken bir hata oluştu. Lütfen konsolu kontrol edin.');
+                // Hata durumunda da butonu tekrar eski haline getir
+                saveButton.disabled = false;
+                saveButton.textContent = 'Kaydet';
+            });
         });
 
         // Başarılı kayıt modalını kapatma
@@ -1288,13 +1341,8 @@ Defteri dolduran personel: ${personnelInfo}
             const pdfSource = document.getElementById('pdf-content-area');
             const selectedTailNo = document.getElementById('selected-tailno').textContent.replace('Seçilen Kuyruk Numarası: ', '');
             
-            // Gizli modaldaki content'i geçici olarak görünür yap
-            const secondModal = document.getElementById('second-modal-content');
-            secondModal.classList.remove('hidden');
-
-            // "Kaydet" ve "PDF İndir" butonlarını gizle
+            // "Kaydet" butonunu gizle
             saveButton.style.display = 'none';
-            downloadPdfButton.style.display = 'none';
 
             // html2canvas'a gönderilecek seçenekler
             const options = {
@@ -1323,13 +1371,15 @@ Defteri dolduran personel: ${personnelInfo}
 
                 doc.save(`Faydali_Saat_Raporu_${selectedTailNo}.pdf`);
 
+                // PDF indirme işlemi bittikten sonra "Kaydet" butonunu tekrar göster ve modalı kapat
+                saveButton.style.display = '';
+                successModal.style.display = 'none';
+                updateScreen.style.display = 'none';
             }).catch(error => {
                 console.error("PDF oluşturulurken hata oluştu:", error);
                 alert("PDF oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.");
-            }).finally(() => {
-                // İşlem bittikten sonra butonları ve modalı eski haline getir
+                // Hata oluştuğunda da butonu tekrar göster
                 saveButton.style.display = '';
-                downloadPdfButton.style.display = '';
                 successModal.style.display = 'none';
                 updateScreen.style.display = 'none';
             });
