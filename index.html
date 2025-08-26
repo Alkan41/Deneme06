@@ -696,24 +696,24 @@
                         <option value="Aydın">Aydın</option>
                         <option value="Balıkesir">Balıkesir</option>
                         <option value="Bilecik">Bilecik</option>
-                        <option value="Bingöl">Bingöl</option>
-                        <option value="Bitlis">Bitlis</option>
-                        <option value="Bolu">Bolu</option>
-                        <option value="Burdur">Burdur</option>
-                        <option value="Bursa">Bursa</option>
-                        <option value="Çanakkale">Çanakkale</option>
-                        <option value="Çankırı">Çankırı</option>
-                        <option value="Çorum">Çorum</option>
-                        <option value="Denizli">Denizli</option>
-                        <option value="Diyarbakır">Diyarbakır</option>
-                        <option value="Edirne">Edirne</option>
-                        <option value="Elazığ">Elazığ</option>
-                        <option value="Erzincan">Erzincan</option>
-                        <option value="Erzurum">Erzurum</option>
-                        <option value="Eskişehir">Eskişehir</option>
-                        <option value="Gaziantep">Gaziantep</option>
-                        <option value="Giresun">Giresun</option>
-                        <option value="Gümüşhane">Gümüşhane</option>
+                        <option value="Bingöl">Bingöl</Bingöl>
+                        <option value="Bitlis">Bitlis</Bitlis>
+                        <option value="Bolu">Bolu</Bolu>
+                        <option value="Burdur">Burdur</Burdur>
+                        <option value="Bursa">Bursa</Bursa>
+                        <option value="Çanakkale">Çanakkale</Çanakkale>
+                        <option value="Çankırı">Çankırı</Çankırı>
+                        <option value="Çorum">Çorum</Çorum>
+                        <option value="Denizli">Denizli</Denizli>
+                        <option value="Diyarbakır">Diyarbakır</Diyarbakır>
+                        <option value="Edirne">Edirne</Edirne>
+                        <option value="Elazığ">Elazığ</Elazığ>
+                        <option value="Erzincan">Erzincan</Erzincan>
+                        <option value="Erzurum">Erzurum</Erzurum>
+                        <option value="Eskişehir">Eskişehir</Eskişehir>
+                        <option value="Gaziantep">Gaziantep</Gaziantep>
+                        <option value="Giresun">Giresun</Giresun>
+                        <option value="Gümüşhane">Gümüşhane</Gümüşhane>
                         <option value="Hakkari">Hakkari</Hakkari>
                         <option value="Hatay">Hatay</Hatay>
                         <option value="Isparta">Isparta</Isparta>
@@ -794,7 +794,7 @@
                         <option value="Murat GÜNDÜZ">Murat GÜNDÜZ</option>
                         <option value="Okan AKÇA">Okan AKÇA</option>
                         <option value="Ömer ERSOY">Ömer ERSOY</option>
-                        <option value="Önder BİLGİN">Önder BİLGİN</option>
+                        <option value="Önder BİLGİN">Önder BİLGİN</Önder>
                         <option value="Yılmaz KARADENİZ">Yılmaz KARADENİZ</Yılmaz>
                         <option value="Ali TOPALAN">Ali TOPALAN</option>
                         <option value="Fatih PARLAK">Fatih PARLAK</option>
@@ -1281,8 +1281,7 @@
             // Re-validate form
             checkFormValidity();
             if (saveButton.disabled) {
-                // Özel mesaj göster
-                // alert('Lütfen tüm gerekli alanları doldurun.');
+                alert('Lütfen tüm gerekli alanları doldurun.');
                 return;
             }
             
@@ -1305,13 +1304,15 @@
             const frdsControlDate = frdsControlDateInput.value;
             const missionLocation = missionLocationSelect.value;
             const aircraftStatus = aircraftStatusSelect.value;
-            
-            // Yeni mantık için güncellenmiş kısım:
-            // Eğer durum 'Gayrıfaal' ise nedeni al, yoksa boş bırak.
-            const nonOperationalStatus = (aircraftStatus === 'Gayrıfaal') ? nonOperationalStatusSelect.value : '';
+            const nonOperationalStatus = nonOperationalStatusSelect.value;
             const personnelInfo = personnelInfoSelect.value;
             
-            // Veri göndermek için formData nesnesi oluşturma
+            let statusMessage = `${aircraftStatus}`;
+            if (aircraftStatus === 'Gayrıfaal') {
+                statusMessage += ` - ${nonOperationalStatus}`;
+            }
+
+            // Prepare data as a JSON object
             const formData = {
                 model: selectedModel,
                 tailNo: selectedTailNo,
@@ -1331,12 +1332,13 @@
                 engineStartDate: engineStartDate,
                 frdsControlDate: frdsControlDate,
                 missionLocation: missionLocation,
-                aircraftStatus: aircraftStatus, // Hava aracı durumunu gönder
-                nonOperationalReason: nonOperationalStatus, // T sütunu için yeni, koşullu neden alanı
-                personnelInfo: personnelInfo // U sütunu için personel bilgisini gönder
+                aircraftStatus: statusMessage,
+                personnelInfo: personnelInfo
             };
 
-            // Google Apps Script'e veri göndermek için GET yöntemini kullanmak
+            // Send data to Google Sheets
+            // Google Apps Script'e veri göndermek için GET yöntemini kullanmak genellikle daha güvenilir bir yoldur.
+            // Verileri URL parametreleri olarak ekliyoruz.
             const googleAppsScriptUrl = 'https://script.google.com/macros/s/AKfycbwJVWNHg6xtn6pbMfugQq5jOd33JCiWa3YjjueHAzS5uticnmpI_jtPjXgehHvDPzX8BA/exec';
             const urlParams = new URLSearchParams(formData).toString();
             const finalUrl = `${googleAppsScriptUrl}?${urlParams}`;
@@ -1369,8 +1371,7 @@ Toplam İniş Sayısı: ${totalLandingCount}
 En Son Motor Çalıştırma Tarihi: ${engineStartDate}
 En son FRDS kontrol Tarihi: ${frdsControlDate}
 Görev Yeri: ${missionLocation}
-Hava Aracı Durumu: ${aircraftStatus}
-${nonOperationalStatus ? `Gayrıfaal Nedeni: ${nonOperationalStatus}` : ''}
+Hava Aracı Durumu: ${statusMessage}
 Defteri dolduran personel: ${personnelInfo}
 `;
                 successMessage.textContent = message;
@@ -1381,7 +1382,7 @@ Defteri dolduran personel: ${personnelInfo}
             })
             .catch(error => {
                 console.error('Veri gönderme hatası:', error);
-                // alert('Veri kaydedilirken bir hata oluştu. Lütfen konsolu kontrol edin.');
+                alert('Veri kaydedilirken bir hata oluştu. Lütfen konsolu kontrol edin.');
                 // Revert button state on error
                 saveButton.disabled = false;
                 saveButton.textContent = 'Kaydet';
