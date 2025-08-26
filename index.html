@@ -1304,15 +1304,12 @@
             const frdsControlDate = frdsControlDateInput.value;
             const missionLocation = missionLocationSelect.value;
             const aircraftStatus = aircraftStatusSelect.value;
-            const nonOperationalStatus = nonOperationalStatusSelect.value;
+            // Yeni mantık için güncellenmiş kısım:
+            // Eğer durum 'Gayrıfaal' ise nedeni al, yoksa boş bırak.
+            const nonOperationalStatus = (aircraftStatus === 'Gayrıfaal') ? nonOperationalStatusSelect.value : '';
             const personnelInfo = personnelInfoSelect.value;
             
-            let statusMessage = `${aircraftStatus}`;
-            if (aircraftStatus === 'Gayrıfaal') {
-                statusMessage += ` - ${nonOperationalStatus}`;
-            }
-
-            // Prepare data as a JSON object
+            // Veri göndermek için formData nesnesi oluşturma
             const formData = {
                 model: selectedModel,
                 tailNo: selectedTailNo,
@@ -1332,13 +1329,12 @@
                 engineStartDate: engineStartDate,
                 frdsControlDate: frdsControlDate,
                 missionLocation: missionLocation,
-                aircraftStatus: statusMessage,
-                personnelInfo: personnelInfo
+                aircraftStatus: aircraftStatus, // Hava aracı durumunu gönder
+                nonOperationalReason: nonOperationalStatus, // Yeni, koşullu neden alanı
+                personnelInfo: personnelInfo // Personel bilgisini gönder
             };
 
-            // Send data to Google Sheets
-            // Google Apps Script'e veri göndermek için GET yöntemini kullanmak genellikle daha güvenilir bir yoldur.
-            // Verileri URL parametreleri olarak ekliyoruz.
+            // Google Apps Script'e veri göndermek için GET yöntemini kullanmak
             const googleAppsScriptUrl = 'https://script.google.com/macros/s/AKfycbwJVWNHg6xtn6pbMfugQq5jOd33JCiWa3YjjueHAzS5uticnmpI_jtPjXgehHvDPzX8BA/exec';
             const urlParams = new URLSearchParams(formData).toString();
             const finalUrl = `${googleAppsScriptUrl}?${urlParams}`;
@@ -1371,7 +1367,8 @@ Toplam İniş Sayısı: ${totalLandingCount}
 En Son Motor Çalıştırma Tarihi: ${engineStartDate}
 En son FRDS kontrol Tarihi: ${frdsControlDate}
 Görev Yeri: ${missionLocation}
-Hava Aracı Durumu: ${statusMessage}
+Hava Aracı Durumu: ${aircraftStatus}
+${nonOperationalStatus ? `Gayrıfaal Nedeni: ${nonOperationalStatus}` : ''}
 Defteri dolduran personel: ${personnelInfo}
 `;
                 successMessage.textContent = message;
