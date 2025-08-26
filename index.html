@@ -1337,21 +1337,20 @@
             };
 
             // Send data to Google Sheets
+            // Google Apps Script'e veri göndermek için GET yöntemini kullanmak genellikle daha güvenilir bir yoldur.
+            // Verileri URL parametreleri olarak ekliyoruz.
             const googleAppsScriptUrl = 'https://script.google.com/macros/s/AKfycbwJVWNHg6xtn6pbMfugQq5jOd33JCiWa3YjjueHAzS5uticnmpI_jtPjXgehHvDPzX8BA/exec';
+            const urlParams = new URLSearchParams(formData).toString();
+            const finalUrl = `${googleAppsScriptUrl}?${urlParams}`;
 
             // Disable button during load
             saveButton.disabled = true;
             saveButton.textContent = 'Veri Gönderiliyor...';
 
-            fetch(googleAppsScriptUrl, {
-                method: 'POST',
-                mode: 'no-cors',
-                cache: 'no-cache',
-                credentials: 'omit',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData)
+            // Fetch isteğini GET metodu ile gönderiyoruz
+            fetch(finalUrl, {
+                method: 'GET',
+                mode: 'no-cors'
             })
             .then(() => {
                 const message = `
