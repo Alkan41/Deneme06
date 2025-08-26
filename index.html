@@ -335,6 +335,17 @@
         .checkbox-group input[type="checkbox"] {
             margin-right: 5px;
         }
+
+        /* Eklenen yeni yeşil yazı stili */
+        .next-date-message {
+            color: green;
+            font-weight: bold;
+            margin-top: -5px; /* Üstteki inputa daha yakın durması için */
+            margin-bottom: 15px;
+            font-size: 0.9em;
+            text-align: right;
+            padding-right: 5px;
+        }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -660,11 +671,15 @@
                     <label for="engine-start-date">20-En Son Motor Çalıştırma Tarihi:</label>
                     <input type="date" id="engine-start-date">
                 </div>
+                <!-- Eklenen yeni yazı alanı -->
+                <div id="engine-next-date" class="hidden next-date-message"></div>
                 
                 <div class="form-row">
                     <label for="frds-control-date">21-En son FRDS kontrol Tarihi:</label>
                     <input type="date" id="frds-control-date">
                 </div>
+                <!-- Eklenen yeni yazı alanı -->
+                <div id="frds-next-date" class="hidden next-date-message"></div>
 
                 <div class="form-row">
                     <label for="mission-location">22-Görev Yeri:</label>
@@ -830,7 +845,7 @@
         const secondModalContent = document.getElementById('second-modal-content');
         const saveButton = document.getElementById('save-button');
 
-        // Başarılı kayıt modalı öğeleri
+        // Success modal elements
         const successModal = document.getElementById('success-modal');
         const successMessage = document.getElementById('success-message');
         const okButton = document.getElementById('ok-button');
@@ -838,15 +853,15 @@
         const pdfContentArea = document.getElementById('pdf-content-area');
 
 
-        // Hava aracı durumu ve alt liste öğeleri
+        // Aircraft status and sub-list elements
         const aircraftStatusSelect = document.getElementById('aircraft-status');
         const nonOperationalReasonDiv = document.getElementById('non-operational-reason');
         const nonOperationalStatusSelect = document.getElementById('non-operational-status');
 
-        // Personel bilgisi alanı
+        // Personnel info area
         const personnelInfoSelect = document.getElementById('personnel-info');
 
-        // Saat ve sayı giriş alanları
+        // Hour and number input fields
         const dailyHoursInput = document.getElementById('daily-hours-input');
         const dailyEngineHoursInput = document.getElementById('daily-engine-hours-input');
         const dailyPropellerHoursInput = document.getElementById('daily-propeller-hours-input');
@@ -858,14 +873,14 @@
         const frdsControlDateInput = document.getElementById('frds-control-date');
         const missionLocationSelect = document.getElementById('mission-location');
         
-        // Yeni eklenen checkbox'lar
+        // Newly added checkboxes
         const engineStartOnlyCheckbox = document.getElementById('engine-start-only-checkbox');
         const frdsControlOnlyCheckbox = document.getElementById('frds-control-only-checkbox');
         
-        // Dikdörtgen alanlar (fieldset'ler)
+        // Rectangular areas (fieldsets)
         const fieldsets = document.querySelectorAll('.fieldset-container fieldset');
 
-        // Toplam kutucukları
+        // Total boxes
         const totalBoxes = [
             document.getElementById('totalHours'),
             document.getElementById('totalEngineHours'),
@@ -875,14 +890,19 @@
             document.getElementById('totalLandingCount')
         ];
         
-        // Günlük giriş alanlarının listesi
+        // List of daily input fields
         const dailyInputs = [
             dailyHoursInput, dailyEngineHoursInput, dailyPropellerHoursInput,
             dailyFlightCountInput, dailyEngineCyclesInput, dailyLandingCountInput
         ];
 
+        // Eklenen yeni yazı alanları
+        const engineNextDate = document.getElementById('engine-next-date');
+        const frdsNextDate = document.getElementById('frds-next-date');
+        let initialEngineDate;
+        let initialFrdsDate;
 
-        // Veri yapısı
+        // Data structure
         const aircraftData = {
             'AT-802': ['OR-2021', 'OR-2022', 'OR-2023', 'OR-2024', 'OR-2025', 'OR-2026', 'OR-2027', 'OR-2028', 'OR-2029', 'OR-2036', 'OR-2038'],
             'T-70': ['OR-1019', 'OR-1018', 'OR-1020'],
@@ -899,24 +919,24 @@
             });
         });
 
-        // Hava aracı seçimi modalını açma
+        // Open aircraft selection modal
         updateAircraftHoursMenuItem.addEventListener('click', () => {
             updateScreen.style.display = 'flex';
             firstModalContent.classList.remove('hidden');
             secondModalContent.classList.add('hidden');
         });
 
-        // Hava aracı seçimi modalını kapatma
+        // Close aircraft selection modal
         closeButton1.addEventListener('click', () => {
             updateScreen.style.display = 'none';
         });
 
-        // Hava aracı bilgileri giriş modalını kapatma
+        // Close aircraft info entry modal
         closeButton2.addEventListener('click', () => {
             updateScreen.style.display = 'none';
         });
 
-        // Model seçimine göre kuyruk numaralarını doldurma
+        // Populate tail numbers based on model selection
         aircraftModelSelect.addEventListener('change', (event) => {
             const selectedModel = event.target.value;
             connectedSelect.innerHTML = '';
@@ -935,12 +955,12 @@
             }
         });
 
-        // Güncelle butonuna basıldığında ikinci modalı gösterme
+        // Show second modal on 'Update' button click
         updateButton.addEventListener('click', () => {
             const selectedModel = aircraftModelSelect.value;
             const selectedTailNo = connectedSelect.value;
             
-            // Eğer model veya kuyruk numarası seçilmemişse uyarı ver ve işlemi durdur
+            // If model or tail number is not selected, warn and stop the process
             if (!selectedModel || !selectedTailNo) {
                 alert('Lütfen bir hava aracı modeli ve kuyruk numarası seçiniz.');
                 return;
@@ -949,7 +969,7 @@
             document.getElementById('selected-model').textContent = `Seçilen Hava Aracı Modeli: ${selectedModel}`;
             document.getElementById('selected-tailno').textContent = `Seçilen Kuyruk Numarası: ${selectedTailNo}`;
 
-            // Gerekli alanları temizle ve başlangıç değerlerini ayarla
+            // Clear necessary fields and set initial values
             dateInput.value = '';
             engineStartDateInput.value = '';
             frdsControlDateInput.value = '';
@@ -959,7 +979,7 @@
             nonOperationalStatusSelect.value = '';
             personnelInfoSelect.value = '';
             
-            // Daily input alanlarını temizle ve varsayılan hale getir
+            // Clear daily input fields and revert to default state
             dailyInputs.forEach(input => {
                 input.value = '';
                 input.classList.remove('filled');
@@ -967,51 +987,59 @@
                 if (label) label.classList.remove('filled');
             });
 
-            // Checkbox'ları başlangıçta temizle
+            // Clear checkboxes initially
             engineStartOnlyCheckbox.checked = false;
             frdsControlOnlyCheckbox.checked = false;
-            // Fieldset'leri normal duruma getir
+            // Revert fieldsets to normal state
             fieldsets.forEach(fieldset => fieldset.classList.remove('faded-fieldset'));
             dailyInputs.forEach(input => input.disabled = false);
 
-            // Tarih alanlarını otomatik doldurma
+            // Auto-fill date fields
             const today = new Date().toISOString().slice(0, 10);
             dateInput.value = today;
             engineStartDateInput.value = today;
             frdsControlDateInput.value = today;
 
-            // Toplam kutucuklarındaki yeşil rengi temizle
+            // Store initial date values for comparison
+            initialEngineDate = today;
+            initialFrdsDate = today;
+
+            // Hide next date messages
+            engineNextDate.classList.add('hidden');
+            frdsNextDate.classList.add('hidden');
+
+            // Clear green color from total boxes
             updateTotalBoxColors();
 
-            // Hesaplamaları başlangıç değerleriyle yap
+            // Perform calculations with initial values
             calculateAndUpdateTotals();
-            checkFormValidity(); // Kaydet butonu durumunu kontrol et
+            checkFormValidity(); // Check save button status
 
             firstModalContent.classList.add('hidden');
             secondModalContent.classList.remove('hidden');
         });
 
-        // Hava aracının durumu değiştiğinde alt listeyi göster/gizle
+        // Show/hide sub-list when aircraft status changes
         aircraftStatusSelect.addEventListener('change', (event) => {
             if (event.target.value === 'Gayrıfaal') {
                 nonOperationalReasonDiv.classList.remove('hidden');
             } else {
                 nonOperationalReasonDiv.classList.add('hidden');
-                nonOperationalStatusSelect.value = ''; // Seçimi temizle
+                nonOperationalStatusSelect.value = ''; // Clear selection
             }
             checkFormValidity();
         });
         
-        // Kaydet butonu için form doğrulama fonksiyonu
+        // Function to validate the form for the Save button
         function checkFormValidity() {
             let isFormValid = true;
             
-            // Zorunlu alanlar listesi
+            // List of required fields
             const requiredFields = [
                 dateInput, engineStartDateInput, frdsControlDateInput, missionLocationSelect, aircraftStatusSelect, personnelInfoSelect
             ];
             
-            // Eğer özel modlar aktif değilse günlük inputları da kontrol et
+            // If special modes are not active, check daily inputs as well
             if (!engineStartOnlyCheckbox.checked && !frdsControlOnlyCheckbox.checked) {
                  dailyInputs.forEach(field => {
                     if (field.value.trim() === '') {
@@ -1026,7 +1054,7 @@
                 }
             });
             
-            // Gayrıfaal seçili ise ek alanı da kontrol et
+            // If 'Gayrıfaal' is selected, also check the extra field
             if (aircraftStatusSelect.value === 'Gayrıfaal' && nonOperationalStatusSelect.value.trim() === '') {
                 isFormValid = false;
             }
@@ -1038,7 +1066,7 @@
             }
         }
         
-        // Saatleri HH:MM formatından dakika cinsine dönüştüren fonksiyon
+        // Function to convert time from HH:MM format to minutes
         function timeToMinutes(timeStr) {
             if (!timeStr) return 0;
             const parts = timeStr.split(':');
@@ -1047,7 +1075,7 @@
             return hours * 60 + minutes;
         }
 
-        // Dakika cinsinden süreyi HH:MM formatına dönüştüren fonksiyon
+        // Function to convert duration in minutes to HH:MM format
         function minutesToTime(totalMinutes) {
             if (isNaN(totalMinutes) || totalMinutes < 0) return '00:00';
             const hours = Math.floor(totalMinutes / 60);
@@ -1055,7 +1083,7 @@
             return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
         }
 
-        // Hesaplamaları yapan ve güncelleyen fonksiyon
+        // Function to perform calculations and update totals
         function calculateAndUpdateTotals() {
             const transferredHoursStr = document.getElementById('transferredHours').textContent;
             const dailyHoursStr = dailyHoursInput.value;
@@ -1093,10 +1121,10 @@
             const totalLandingCount = transferredLandingCount + dailyLandingCount;
             document.getElementById('totalLandingCount').textContent = totalLandingCount;
             
-            updateTotalBoxColors(); // Hesaplama sonrası renkleri güncelle
+            updateTotalBoxColors(); // Update colors after calculation
         }
         
-        // Toplam kutucuklarını dinamik olarak renklendirme fonksiyonu
+        // Function to dynamically color the total boxes
         function updateTotalBoxColors() {
             const boxes = [
                 {input: dailyHoursInput, total: document.getElementById('totalHours')},
@@ -1115,44 +1143,56 @@
             });
         }
 
-        // Dinamik renk değiştirme ve otomatik doldurma için event listener'lar
-        const highlightInputs = [
-            dailyHoursInput, dailyEngineHoursInput, dailyPropellerHoursInput,
+        // A new function to handle the color change of input and label
+        function updateInputAndLabelStyle(inputElement) {
+            const label = document.querySelector(`label[for="${inputElement.id}"]`);
+            if (inputElement.value.trim() !== '') {
+                inputElement.classList.add('filled');
+                if (label) {
+                    label.classList.add('filled');
+                }
+            } else {
+                inputElement.classList.remove('filled');
+                if (label) {
+                    label.classList.remove('filled');
+                }
+            }
+        }
+
+        // Event listener for dynamic color change and auto-filling
+        dailyHoursInput.addEventListener('input', () => {
+            // Auto-fill fields 6 and 9 when field 3 is changed
+            dailyEngineHoursInput.value = dailyHoursInput.value;
+            dailyPropellerHoursInput.value = dailyHoursInput.value;
+            
+            // Call the new function for all three related inputs to ensure their colors are updated
+            updateInputAndLabelStyle(dailyHoursInput);
+            updateInputAndLabelStyle(dailyEngineHoursInput);
+            updateInputAndLabelStyle(dailyPropellerHoursInput);
+
+            // Update all calculations and total box colors
+            calculateAndUpdateTotals();
+            checkFormValidity();
+        });
+
+        const otherHighlightInputs = [
+            dailyEngineHoursInput, dailyPropellerHoursInput,
             dailyFlightCountInput, dailyEngineCyclesInput, dailyLandingCountInput
         ];
-
-        highlightInputs.forEach(input => {
-            const label = document.querySelector(`label[for="${input.id}"]`);
+        
+        // Add listeners for other inputs (except dailyHoursInput, which is handled above)
+        otherHighlightInputs.forEach(input => {
             input.addEventListener('input', () => {
-                // Sadece 3 numaralı kutu değişince diğer saat kutularını da güncelle
-                if (input.id === 'daily-hours-input') {
-                    dailyEngineHoursInput.value = input.value;
-                    dailyPropellerHoursInput.value = input.value;
-                }
-                
-                // Diğer tüm highlight inputları için renk değiştirme
-                if (input.value.trim() !== '') {
-                    input.classList.add('filled');
-                    if (label) {
-                        label.classList.add('filled');
-                    }
-                } else {
-                    input.classList.remove('filled');
-                    if (label) {
-                        label.classList.remove('filled');
-                    }
-                }
-
-                // Hesaplamaları ve toplam kutusu renklerini otomatik olarak güncelle
+                updateInputAndLabelStyle(input); // Update style for the specific input
                 calculateAndUpdateTotals();
                 checkFormValidity();
             });
         });
-        
-        // Form alanlarındaki değişiklikleri dinle ve Kaydet butonu durumunu güncelle
+
+        // Listen for changes in all form fields to update Save button status
         document.querySelectorAll('#second-modal-content input, #second-modal-content select').forEach(field => {
             field.addEventListener('change', checkFormValidity);
-            // Saat formatı validasyonu (HH:MM)
+            // Time format validation (HH:MM)
             if (field.id.includes('hours-input')) {
                 field.addEventListener('blur', (event) => {
                     const regex = /^(?:[0-9]{1,2}:[0-5][0-9])|$/;
@@ -1164,12 +1204,43 @@
             }
         });
 
-        // Yeni eklenen checkbox'ların olay dinleyicisi
+        // Yeni eklenen tarihe 7 gün ekleme ve yazıyı gösterme/gizleme fonksiyonu
+        function updateNextDateMessage(dateInput, messageDiv, initialDate) {
+            const selectedDate = dateInput.value;
+            // Tarih seçili değilse veya bugüne eşitse yazıyı gizle
+            if (!selectedDate || selectedDate === initialDate) {
+                messageDiv.classList.add('hidden');
+            } else {
+                // Seçilen tarihe 7 gün ekle
+                const newDate = new Date(selectedDate);
+                newDate.setDate(newDate.getDate() + 7);
+                
+                // Tarihi YYYY-MM-DD formatına dönüştür
+                const nextDateString = newDate.toISOString().slice(0, 10);
+                
+                // Yazıyı güncelle ve göster
+                messageDiv.textContent = `Bir sonraki tarih: ${nextDateString}`;
+                messageDiv.classList.remove('hidden');
+            }
+        }
+
+        // 20-En Son Motor Çalıştırma Tarihi için olay dinleyicisi
+        engineStartDateInput.addEventListener('change', () => {
+            updateNextDateMessage(engineStartDateInput, engineNextDate, initialEngineDate);
+        });
+
+        // 21-En son FRDS kontrol Tarihi için olay dinleyicisi
+        frdsControlDateInput.addEventListener('change', () => {
+            updateNextDateMessage(frdsControlDateInput, frdsNextDate, initialFrdsDate);
+        });
+
+
+        // New checkbox event listener
         function handleSpecialMode() {
             const isSpecialModeActive = engineStartOnlyCheckbox.checked || frdsControlOnlyCheckbox.checked;
 
             if (isSpecialModeActive) {
-                // Checkbox'ları birbirine bağımlı yap
+                // Make checkboxes mutually exclusive
                 if (engineStartOnlyCheckbox.checked) {
                     frdsControlOnlyCheckbox.checked = false;
                 }
@@ -1177,9 +1248,9 @@
                     engineStartOnlyCheckbox.checked = false;
                 }
                 
-                // 6 dikdörtgeni soluk hale getir
+                // Fade out the 6 fieldsets
                 fieldsets.forEach(fieldset => fieldset.classList.add('faded-fieldset'));
-                // Girişleri 00:00 veya 0 ile doldur ve devre dışı bırak
+                // Fill inputs with '00:00' or '0' and disable them
                 dailyInputs.forEach(input => {
                     input.disabled = true;
                     if (input.id.includes('hours')) {
@@ -1187,35 +1258,27 @@
                     } else {
                         input.value = '0';
                     }
-                    const label = document.querySelector(`label[for="${input.id}"]`);
-                    if (label) {
-                        input.classList.add('filled');
-                        label.classList.add('filled');
-                    }
+                    updateInputAndLabelStyle(input); // Update style for each input
                 });
             } else {
-                // Eski haline getir
+                // Revert to original state
                 fieldsets.forEach(fieldset => fieldset.classList.remove('faded-fieldset'));
                 dailyInputs.forEach(input => {
                     input.disabled = false;
                     input.value = '';
-                    const label = document.querySelector(`label[for="${input.id}"]`);
-                    if (label) {
-                        input.classList.remove('filled');
-                        label.classList.remove('filled');
-                    }
+                    updateInputAndLabelStyle(input); // Revert style for each input
                 });
             }
-            calculateAndUpdateTotals(); // Toplamları yeniden hesapla
-            checkFormValidity(); // Kaydet butonu durumunu güncelle
+            calculateAndUpdateTotals(); // Recalculate totals
+            checkFormValidity(); // Update Save button status
         }
 
         engineStartOnlyCheckbox.addEventListener('change', handleSpecialMode);
         frdsControlOnlyCheckbox.addEventListener('change', handleSpecialMode);
 
-        // Kaydet butonuna basıldığında kayıt işlemini gerçekleştir ve uyarı modalını göster
+        // Perform save operation on button click
         saveButton.addEventListener('click', () => {
-            // Form validasyonunu tekrar kontrol et
+            // Re-validate form
             checkFormValidity();
             if (saveButton.disabled) {
                 alert('Lütfen tüm gerekli alanları doldurun.');
@@ -1249,7 +1312,7 @@
                 statusMessage += ` - ${nonOperationalStatus}`;
             }
 
-            // Verileri JSON objesi olarak hazırlar
+            // Prepare data as a JSON object
             const formData = {
                 model: selectedModel,
                 tailNo: selectedTailNo,
@@ -1273,16 +1336,16 @@
                 personnelInfo: personnelInfo
             };
 
-            // Google Sheets'e veri gönderme işlemi
-            const googleAppsScriptUrl = 'https://script.google.com/macros/s/AKfycbyB3C0SeMIoxCa8kPBC5f6EWnia9KgjYt1aOhJciU9X/dev';
+            // Send data to Google Sheets
+            const googleAppsScriptUrl = 'https://script.google.com/macros/s/AAKfycbyB3C0SeMIoxCa8kPBC5f6EWnia9KgjYt1aOhJciU9X/exec';
 
-            // Yükleme sırasında butonu devre dışı bırak
+            // Disable button during load
             saveButton.disabled = true;
             saveButton.textContent = 'Veri Gönderiliyor...';
 
             fetch(googleAppsScriptUrl, {
                 method: 'POST',
-                mode: 'no-cors', // Bu önemli, CORS hatası almamak için
+                mode: 'no-cors',
                 cache: 'no-cache',
                 credentials: 'omit',
                 headers: {
@@ -1314,26 +1377,26 @@ Defteri dolduran personel: ${personnelInfo}
 `;
                 successMessage.textContent = message;
                 successModal.style.display = 'flex';
-                // İşlem başarılı, butonu tekrar eski haline getir
+                // Revert button state on success
                 saveButton.disabled = false;
                 saveButton.textContent = 'Kaydet';
             })
             .catch(error => {
                 console.error('Veri gönderme hatası:', error);
                 alert('Veri kaydedilirken bir hata oluştu. Lütfen konsolu kontrol edin.');
-                // Hata durumunda da butonu tekrar eski haline getir
+                // Revert button state on error
                 saveButton.disabled = false;
                 saveButton.textContent = 'Kaydet';
             });
         });
 
-        // Başarılı kayıt modalını kapatma
+        // Close success modal
         okButton.addEventListener('click', () => {
             successModal.style.display = 'none';
             updateScreen.style.display = 'none';
         });
 
-        // PDF İndir butonuna tıklama olayı
+        // PDF Download button click event
         downloadPdfButton.addEventListener('click', () => {
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('p', 'mm', 'a4');
@@ -1341,12 +1404,12 @@ Defteri dolduran personel: ${personnelInfo}
             const pdfSource = document.getElementById('pdf-content-area');
             const selectedTailNo = document.getElementById('selected-tailno').textContent.replace('Seçilen Kuyruk Numarası: ', '');
             
-            // "Kaydet" butonunu gizle
+            // Hide the "Save" button
             saveButton.style.display = 'none';
 
-            // html2canvas'a gönderilecek seçenekler
+            // Options for html2canvas
             const options = {
-                scale: 2, // Çözünürlüğü artırır
+                scale: 2,
                 useCORS: true,
                 backgroundColor: '#ffffff'
             };
@@ -1371,14 +1434,14 @@ Defteri dolduran personel: ${personnelInfo}
 
                 doc.save(`Faydali_Saat_Raporu_${selectedTailNo}.pdf`);
 
-                // PDF indirme işlemi bittikten sonra "Kaydet" butonunu tekrar göster ve modalı kapat
+                // After PDF download is complete, show the "Save" button again and close the modal
                 saveButton.style.display = '';
                 successModal.style.display = 'none';
                 updateScreen.style.display = 'none';
             }).catch(error => {
                 console.error("PDF oluşturulurken hata oluştu:", error);
                 alert("PDF oluşturulurken bir hata oluştu. Lütfen tekrar deneyin.");
-                // Hata oluştuğunda da butonu tekrar göster
+                // If an error occurs, show the button again
                 saveButton.style.display = '';
                 successModal.style.display = 'none';
                 updateScreen.style.display = 'none';
