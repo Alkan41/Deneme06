@@ -72,7 +72,7 @@
             align-items: center;
             margin-top: 30px;
         }
-        .nav-button, .action-button {
+        .nav-button, .action-button, .upload-button {
             padding: 10px 20px;
             border: none;
             border-radius: 4px;
@@ -173,8 +173,6 @@
         .section.active {
             display: block;
         }
-
-        /* Makbuz Yükleme Butonu Stilleri */
         .upload-button {
             width: 100%;
             padding: 10px;
@@ -186,9 +184,25 @@
             color: #555;
             box-sizing: border-box;
             cursor: pointer;
+            margin-top: 20px;
         }
         .upload-button:hover {
             background-color: #d4d4d4;
+        }
+        
+        /* iframe stilleri */
+        .iframe-container {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+        #uploadIframe {
+            width: 100%;
+            height: 100%;
+            border: none;
         }
     </style>
 </head>
@@ -377,8 +391,11 @@
                 <div class="section" id="section-7">
                     <div class="header">MAKBUZ YÜKLE</div>
                     <div class="question-box">
-                        <p class="question-description">Makbuz yüklemek için aşağıdaki pencereyi kullanın.</p>
-                        <iframe src="proxy.php?url=http://bulut.ogm.gov.tr/app/tr-TR/Yukleme/Istek/OGMDrive/16a36f18-da59-4f0e-94dc-c02f9aec6c3a" width="100%" height="400" style="border:1px solid #ccc;"></iframe>
+                        <p class="question-description">Makbuz yüklemek için aşağıdaki butonu kullanın.</p>
+                        <button type="button" class="upload-button" onclick="openIframe()">Makbuz Yükleme Sayfasını Aç</button>
+                        <div id="iframe-container" class="iframe-container hidden">
+                            <iframe id="uploadIframe" src="" allowfullscreen></iframe>
+                        </div>
                     </div>
                     
                     <div class="button-container">
@@ -677,19 +694,20 @@
             messageDiv.classList.add('error');
         }
     }
-    
-    function openPopup() {
-        const url = 'https://bulut.ogm.gov.tr/DENEME5';
-        const width = 400; // Yarıya küçültülmüş genişlik
-        const height = 300; // Yarıya küçültülmüş yükseklik
-        const left = (window.innerWidth - width) / 2;
-        const top = (window.innerHeight - height) / 2;
+
+    function openIframe() {
+        const iframeContainer = document.getElementById('iframe-container');
+        const iframe = document.getElementById('uploadIframe');
         
-        window.open(url, '_blank', `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`);
+        // Proxy dosyasını kullanarak iframe'i doldurur
+        iframe.src = 'proxy.php?url=https://bulut.ogm.gov.tr/DENEME5';
+        iframeContainer.classList.remove('hidden');
     }
 
     function submitForm() {
         alert("Form verileri kaydedildi. Lütfen makbuzunuzu açılan sayfada yüklemeyi unutmayın!");
+        // İşlem tamamlandığında iframe'i gizle
+        document.getElementById('iframe-container').classList.add('hidden');
         resetForm();
     }
     
