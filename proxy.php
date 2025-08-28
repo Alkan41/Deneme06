@@ -1,39 +1,42 @@
 <?php
-// Gelen 'url' parametresini kontrol et
-if (isset($_GET['url']) && !empty($_GET['url'])) {
-    // URL'yi al ve temizle
-    $url = htmlspecialchars($_GET['url']);
+header('Access-Control-Allow-Origin: *');
 
-    // cURL ile bağlantı kurma
-    $ch = curl_init();
-    
-    // cURL ayarlarını yap
-    curl_setopt($ch, CURLOPT_URL, $url);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); // İçeriği metin olarak geri döndür
-    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true); // Varsa yönlendirmeleri takip et
-    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false); // SSL sertifikasını doğrulama (gerekli olabilir)
-    
-    // Sayfa içeriğini çek
-    $content = curl_exec($ch);
-    $http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+// Hedef URL'yi al
+$url = $_GET['url'] ?? '';
 
-    // Hata kontrolü
-    if (curl_errno($ch) || $http_code >= 400) {
-        // Hata varsa mesaj göster
-        header("HTTP/1.1 500 Internal Server Error");
-        echo "Bağlantı hatası: " . curl_error($ch) . " (HTTP Kodu: " . $http_code . ")";
-    } else {
-        // Başarılıysa içeriği yazdır
-        header('Content-Type: text/html');
-        echo $content;
-    }
-
-    // cURL oturumunu kapat
-    curl_close($ch);
-
-} else {
-    // 'url' parametresi yoksa hata mesajı göster
-    header("HTTP/1.1 400 Bad Request");
-    echo "Hata: 'url' parametresi eksik.";
+// URL boşsa veya geçerli değilse hata ver
+if (empty($url) || !filter_var($url, FILTER_VALIDATE_URL)) {
+    http_response_code(400);
+    die('Hata: Geçersiz veya boş URL.');
 }
+
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, $url);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HEADER, false);
+curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+
+$response = curl_exec($ch);
+$http_code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+if ($response === false) {
+    http_response_code(500);
+    die('cURL hatası: ' . curl_error($ch));
+}
+
+// Orijinal sayfanın Content-Type başlığını gönder
+$content_type = curl_getinfo($ch, CURLINFO_CONTENT_TYPE);
+if ($content_type) {
+    header('Content-Type: ' . $content_type);
+} else {
+    header('Content-Type: text/html; charset=utf-8');
+}
+
+http_response_code($http_code);
+echo $response;
+
+curl_close($ch);
 ?>
