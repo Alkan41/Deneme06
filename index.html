@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Yakıt Takip Sistemi</title>
-    <meta name="referrer" content="no-referrer">
+    <meta name="referrer" content="origin"> 
     <style>
         body {
             background-color: rgb(191, 209, 255);
@@ -495,10 +495,16 @@
             const selectedOption = nameSelect.options[nameSelect.selectedIndex];
             type = selectedOption.getAttribute('data-type');
         }
-        if (type === 'driver') {
-            receiptHeader.textContent = 'ATIK-';
+        
+        // Makbuz başlığını güncelle
+        receiptHeader.textContent = type === 'driver' ? 'ATIK-' : 'MAKBUZ NUMARASI';
+
+        // Kuyruk numarası zorunluluğunu güncelle
+        const tailNumberInput = document.getElementById('tail-number');
+        if (type === 'pilot') {
+            tailNumberInput.required = true;
         } else {
-            receiptHeader.textContent = 'MAKBUZ NUMARASI';
+            tailNumberInput.required = false;
         }
     }
 
@@ -536,15 +542,9 @@
             }
         }
         let next = current + 1;
+        // Eğer personel tipi "driver" ise Hava Aracı Kuyruk No bölümünü atla
         if (current === 4) {
-            const noNameCheckbox = document.getElementById('no-name-checkbox');
-            const nameSelect = document.getElementById('name-select');
-            let selectedType = 'unknown';
-            if (noNameCheckbox.checked) {
-                selectedType = document.querySelector('input[name="manual-personnel-type"]:checked').value;
-            } else if (nameSelect.value) {
-                selectedType = nameSelect.options[nameSelect.selectedIndex].getAttribute('data-type');
-            }
+            const selectedType = getPersonnelType();
             if (selectedType === 'driver') {
                 next++;
             }
@@ -554,6 +554,17 @@
 
     function prevSection(current) {
         let prev = current - 1;
+        // Eğer personel tipi "driver" ise Hava Aracı Kuyruk No bölümünü atla
+        if (current === 6) {
+            const selectedType = getPersonnelType();
+            if (selectedType === 'driver') {
+                prev--;
+            }
+        }
+        showSection(prev);
+    }
+
+    function getPersonnelType() {
         const noNameCheckbox = document.getElementById('no-name-checkbox');
         const nameSelect = document.getElementById('name-select');
         let selectedType = 'unknown';
@@ -562,10 +573,7 @@
         } else if (nameSelect.value) {
             selectedType = nameSelect.options[nameSelect.selectedIndex].getAttribute('data-type');
         }
-        if (current === 6 && selectedType === 'driver') {
-            prev--;
-        }
-        showSection(prev);
+        return selectedType;
     }
 
     function resetForm() {
@@ -700,11 +708,25 @@
         const iframe = document.getElementById('uploadIframe');
         
         // Proxy dosyasını kullanarak iframe'i doldurur
-        iframe.src = 'proxy.php?url=https://bulut.ogm.gov.tr/DENEME5';
+        iframe.src = 'proxy.php?url=' + encodeURIComponent('https://bulut.ogm.gov.tr/DENEME5');
         iframeContainer.classList.remove('hidden');
     }
 
     function submitForm() {
+        // Burada verileri sunucuya gönderme işlemi yapılacak (örneğin fetch API ile)
+        // const formData = new FormData(document.getElementById('fuel-form'));
+        // fetch('save_data.php', {
+        //     method: 'POST',
+        //     body: formData
+        // }).then(response => response.json())
+        //   .then(data => {
+        //       if (data.success) {
+        //           alert("Form verileri başarıyla kaydedildi!");
+        //       } else {
+        //           alert("Veri kaydında hata oluştu: " + data.message);
+        //       }
+        //   });
+        
         alert("Form verileri kaydedildi. Lütfen makbuzunuzu açılan sayfada yüklemeyi unutmayın!");
         // İşlem tamamlandığında iframe'i gizle
         document.getElementById('iframe-container').classList.add('hidden');
