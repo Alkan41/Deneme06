@@ -71,32 +71,38 @@ import 'jspdf-autotable';
 // interface PersonnelApprovalRequest { id: string; name: string; job: string; timestamp: string; }
 
 
-// --- BUNDLED FROM: hooks/useLocalStorage.ts ---
-function useLocalStorage(key, initialValue) {
-    const [storedValue, setStoredValue] = useState(() => {
-        if (typeof window === 'undefined') {
-            return initialValue;
-        }
-        try {
-            const item = window.localStorage.getItem(key);
-            return item ? JSON.parse(item) : initialValue;
-        } catch (error) {
-            console.error(error);
-            return initialValue;
-        }
-    });
+// --- BUNDLED FROM: services/apiService.ts ---
+const FAKE_API_LATENCY = 300;
 
-    useEffect(() => {
-        try {
-            const valueToStore = storedValue instanceof Function ? storedValue(storedValue) : storedValue;
-            window.localStorage.setItem(key, JSON.stringify(valueToStore));
-        } catch (error) {
-            console.error(error);
-        }
-    }, [key, storedValue]);
+const apiService = {
+    getItem: (key) => {
+        return new Promise((resolve, reject) => {
+            setTimeout(() => {
+                try {
+                    const item = window.localStorage.getItem(key);
+                    resolve(item ? JSON.parse(item) : null);
+                } catch (error) {
+                    console.error(`API Error (getItem: ${key}):`, error);
+                    reject(error);
+                }
+            }, FAKE_API_LATENCY);
+        });
+    },
 
-    return [storedValue, setStoredValue];
-}
+    setItem: (key, value) => {
+         return new Promise((resolve, reject) => {
+            setTimeout(() => {
+                try {
+                    window.localStorage.setItem(key, JSON.stringify(value));
+                    resolve(true);
+                } catch (error) {
+                    console.error(`API Error (setItem: ${key}):`, error);
+                    reject(error);
+                }
+            }, FAKE_API_LATENCY);
+        });
+    }
+};
 
 
 // --- BUNDLED FROM: constants.ts ---
@@ -545,7 +551,7 @@ const FuelEntryForm = ({ personnelList, aircraftData, tankerData, airportList, o
         setCurrentStep(prev);
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         const maxSteps = entryType === 'personnel' ? 5 : 4;
         if (!isStepValid(maxSteps)) return;
         setIsSubmitting(true);
@@ -591,7 +597,7 @@ const FuelEntryForm = ({ personnelList, aircraftData, tankerData, airportList, o
                     personnelName: manualPersonnel.name,
                     jobTitle: manualPersonnel.job
                 };
-                onAddPersonnelRequest({
+                await onAddPersonnelRequest({
                     id: `req-${Date.now()}`,
                     name: manualPersonnel.name,
                     job: manualPersonnel.job,
@@ -639,7 +645,7 @@ const FuelEntryForm = ({ personnelList, aircraftData, tankerData, airportList, o
              }
         }
 
-        onAddRecord(recordToSave);
+        await onAddRecord(recordToSave);
         showMessage('Makbuz yükleme adımına yönlendiriliyorsunuz...', 'success');
 
         const rootEl = document.getElementById('root');
@@ -2449,29 +2455,102 @@ const App = () => {
     const [activeView, setActiveView] = useState(VIEW_FUEL_ENTRY);
     const [message, setMessage] = useState(null);
     const [currentUser, setCurrentUser] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    // Verileri tarayıcıda kalıcı hale getirmek için useLocalStorage kullanıyoruz.
-    const [fuelRecords, setFuelRecords] = useLocalStorage(LOCAL_STORAGE_KEYS.FUEL_RECORDS, []);
-    const [aircraftData, setAircraftData] = useLocalStorage(LOCAL_STORAGE_KEYS.AIRCRAFT_DATA, []);
-    const [tankerData, setTankerData] = useLocalStorage(LOCAL_STORAGE_KEYS.TANKER_DATA, []);
-    const [approvalRequests, setApprovalRequests] = useLocalStorage(LOCAL_STORAGE_KEYS.APPROVAL_REQUESTS, []);
-    const [personnelApprovalRequests, setPersonnelApprovalRequests] = useLocalStorage(LOCAL_STORAGE_KEYS.PERSONNEL_APPROVAL_REQUESTS, []);
-    const [personnelList, setPersonnelList] = useLocalStorage(LOCAL_STORAGE_KEYS.PERSONNEL_LIST, INITIAL_PERSONNEL_LIST);
-    const [adminCredentials, setAdminCredentials] = useLocalStorage(LOCAL_STORAGE_KEYS.ADMIN_CREDENTIALS, [{ id: 'user-0', name: 'OGM Admin', username: 'ogm', password: '1839' }]);
-    const [airportList, setAirportList] = useLocalStorage(LOCAL_STORAGE_KEYS.AIRPORT_LIST, INITIAL_AIRPORT_LIST);
+    // Data states
+    const [fuelRecords, setFuelRecords] = useState([]);
+    const [aircraftData, setAircraftData] = useState([]);
+    const [tankerData, setTankerData] = useState([]);
+    const [approvalRequests, setApprovalRequests] = useState([]);
+    const [personnelApprovalRequests, setPersonnelApprovalRequests] = useState([]);
+    const [personnelList, setPersonnelList] = useState([]);
+    const [adminCredentials, setAdminCredentials] = useState([]);
+    const [airportList, setAirportList] = useState([]);
     
+    // Initial data load effect
+    useEffect(() => {
+        const loadData = async () => {
+            try {
+                setIsLoading(true);
+                const [
+                    storedFuelRecords,
+                    storedAircraftData,
+                    storedTankerData,
+                    storedApprovalRequests,
+                    storedPersonnelApprovalRequests,
+                    storedPersonnelList,
+                    storedAdminCredentials,
+                    storedAirportList
+                ] = await Promise.all([
+                    apiService.getItem(LOCAL_STORAGE_KEYS.FUEL_RECORDS),
+                    apiService.getItem(LOCAL_STORAGE_KEYS.AIRCRAFT_DATA),
+                    apiService.getItem(LOCAL_STORAGE_KEYS.TANKER_DATA),
+                    apiService.getItem(LOCAL_STORAGE_KEYS.APPROVAL_REQUESTS),
+                    apiService.getItem(LOCAL_STORAGE_KEYS.PERSONNEL_APPROVAL_REQUESTS),
+                    apiService.getItem(LOCAL_STORAGE_KEYS.PERSONNEL_LIST),
+                    apiService.getItem(LOCAL_STORAGE_KEYS.ADMIN_CREDENTIALS),
+                    apiService.getItem(LOCAL_STORAGE_KEYS.AIRPORT_LIST)
+                ]);
+
+                setFuelRecords(storedFuelRecords || []);
+                setAircraftData(storedAircraftData || []);
+                setTankerData(storedTankerData || []);
+                setApprovalRequests(storedApprovalRequests || []);
+                setPersonnelApprovalRequests(storedPersonnelApprovalRequests || []);
+                setPersonnelList(storedPersonnelList || INITIAL_PERSONNEL_LIST);
+                setAdminCredentials(storedAdminCredentials || [{ id: 'user-0', name: 'OGM Admin', username: 'ogm', password: '1839' }]);
+                setAirportList(storedAirportList || INITIAL_AIRPORT_LIST);
+
+            } catch (err) {
+                setError('Veriler yüklenirken bir hata oluştu.');
+                showMessage('Veriler yüklenemedi.', 'error');
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        loadData();
+    }, []);
+
     const showMessage = (text, type) => {
         setMessage({ text, type });
         setTimeout(() => setMessage(null), 3000);
     };
 
-    const addFuelRecord = (record) => {
+    // Data update functions that call the API service
+    const createApiUpdater = (state, setState, key) => {
+        return async (updater) => {
+            // Using the current state from a ref-like pattern is safer for async updates
+            // but for this level of complexity, direct state is acceptable.
+            const newValue = typeof updater === 'function' ? updater(state) : updater;
+            try {
+                await apiService.setItem(key, newValue);
+                setState(newValue);
+            } catch (error) {
+                showMessage('Veri kaydedilemedi.', 'error');
+                // Optionally revert state here
+            }
+        };
+    };
+
+    const updateFuelRecords = createApiUpdater(fuelRecords, setFuelRecords, LOCAL_STORAGE_KEYS.FUEL_RECORDS);
+    const updateAircraftData = createApiUpdater(aircraftData, setAircraftData, LOCAL_STORAGE_KEYS.AIRCRAFT_DATA);
+    const updateTankerData = createApiUpdater(tankerData, setTankerData, LOCAL_STORAGE_KEYS.TANKER_DATA);
+    const updateApprovalRequests = createApiUpdater(approvalRequests, setApprovalRequests, LOCAL_STORAGE_KEYS.APPROVAL_REQUESTS);
+    const updatePersonnelApprovalRequests = createApiUpdater(personnelApprovalRequests, setPersonnelApprovalRequests, LOCAL_STORAGE_KEYS.PERSONNEL_APPROVAL_REQUESTS);
+    const updatePersonnelList = createApiUpdater(personnelList, setPersonnelList, LOCAL_STORAGE_KEYS.PERSONNEL_LIST);
+    const updateAdminCredentials = createApiUpdater(adminCredentials, setAdminCredentials, LOCAL_STORAGE_KEYS.ADMIN_CREDENTIALS);
+    const updateAirportList = createApiUpdater(airportList, setAirportList, LOCAL_STORAGE_KEYS.AIRPORT_LIST);
+
+
+    const addFuelRecord = async (record) => {
         const newRecord = { ...record, id: Date.now().toString() };
-        setFuelRecords(prev => [...prev, newRecord]);
+        await updateFuelRecords(prev => [...prev, newRecord]);
     };
     
-     const addPersonnelRequest = (request) => {
-        setPersonnelApprovalRequests(prev => [...prev, request]);
+     const addPersonnelRequest = async (request) => {
+        await updatePersonnelApprovalRequests(prev => [...prev, request]);
         showMessage('Yeni personel kayıt talebi yönetici onayına gönderildi.', 'success');
     };
 
@@ -2483,6 +2562,19 @@ const App = () => {
             return !duplicate;
         });
     }, [personnelList]);
+    
+    if (isLoading) {
+        return React.createElement("div", { className: "min-h-screen flex justify-center items-center bg-ogm-green-50" }, 
+            React.createElement("div", { className: "text-center" },
+                React.createElement("div", { className: "w-16 h-16 border-4 border-dashed rounded-full animate-spin border-ogm-green-600 mx-auto" }),
+                React.createElement("p", { className: "text-xl font-semibold text-ogm-green-800 mt-4" }, "Veriler Yükleniyor...")
+            )
+        );
+    }
+
+    if (error) {
+        return React.createElement("div", { className: "min-h-screen flex justify-center items-center text-xl font-semibold text-red-600" }, error);
+    }
 
     return (
         React.createElement("div", { className: "min-h-screen flex flex-col items-center p-4 sm:p-6 text-slate-800" },
@@ -2512,29 +2604,29 @@ const App = () => {
                             aircraftData: aircraftData,
                             tankerData: tankerData,
                             airportList: airportList,
-                            setApprovalRequests: setApprovalRequests,
+                            setApprovalRequests: updateApprovalRequests,
                             showMessage: showMessage
                         })
                     ),
                     activeView === VIEW_ADMIN_PANEL && (
                         React.createElement(AdminPanel, {
                             aircraftData: aircraftData,
-                            setAircraftData: setAircraftData,
+                            setAircraftData: updateAircraftData,
                             tankerData: tankerData,
-                            setTankerData: setTankerData,
+                            setTankerData: updateTankerData,
                             airportList: airportList,
-                            setAirportList: setAirportList,
+                            setAirportList: updateAirportList,
                             personnelList: personnelList,
-                            setPersonnelList: setPersonnelList,
+                            setPersonnelList: updatePersonnelList,
                             approvalRequests: approvalRequests,
-                            setApprovalRequests: setApprovalRequests,
+                            setApprovalRequests: updateApprovalRequests,
                             personnelApprovalRequests: personnelApprovalRequests,
-                            setPersonnelApprovalRequests: setPersonnelApprovalRequests,
+                            setPersonnelApprovalRequests: updatePersonnelApprovalRequests,
                             fuelRecords: fuelRecords,
-                            setFuelRecords: setFuelRecords,
+                            setFuelRecords: updateFuelRecords,
                             showMessage: showMessage,
                             adminCredentials: adminCredentials,
-                            setAdminCredentials: setAdminCredentials,
+                            setAdminCredentials: updateAdminCredentials,
                             currentUser: currentUser,
                             setCurrentUser: setCurrentUser
                         })
