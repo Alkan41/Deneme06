@@ -71,10 +71,48 @@ import 'jspdf-autotable';
 // interface PersonnelApprovalRequest { id: string; name: string; job: string; timestamp: string; }
 
 
+// --- BUNDLED FROM: hooks/useLocalStorage.ts ---
+function useLocalStorage(key, initialValue) {
+    const [storedValue, setStoredValue] = useState(() => {
+        if (typeof window === 'undefined') {
+            return initialValue;
+        }
+        try {
+            const item = window.localStorage.getItem(key);
+            return item ? JSON.parse(item) : initialValue;
+        } catch (error) {
+            console.error(error);
+            return initialValue;
+        }
+    });
+
+    useEffect(() => {
+        try {
+            const valueToStore = storedValue instanceof Function ? storedValue(storedValue) : storedValue;
+            window.localStorage.setItem(key, JSON.stringify(valueToStore));
+        } catch (error) {
+            console.error(error);
+        }
+    }, [key, storedValue]);
+
+    return [storedValue, setStoredValue];
+}
+
+
 // --- BUNDLED FROM: constants.ts ---
 const VIEW_FUEL_ENTRY = 'fuelEntry';
 const VIEW_SEARCH_RECORDS = 'searchResults';
 const VIEW_ADMIN_PANEL = 'adminPanel';
+const LOCAL_STORAGE_KEYS = {
+    FUEL_RECORDS: 'ogm_fuelRecords',
+    AIRCRAFT_DATA: 'ogm_aircraftData',
+    TANKER_DATA: 'ogm_tankerData',
+    APPROVAL_REQUESTS: 'ogm_approvalRequests',
+    PERSONNEL_APPROVAL_REQUESTS: 'ogm_personnelApprovalRequests',
+    PERSONNEL_LIST: 'ogm_personnelList',
+    ADMIN_CREDENTIALS: 'ogm_adminCredentials',
+    AIRPORT_LIST: 'ogm_airportList',
+};
 const INITIAL_PERSONNEL_LIST = [
     { id: 'p1', name: 'Ahmet Yılmaz', job: 'Pilot' },
     { id: 'p2', name: 'Ayşe Kaya', job: 'Pilot' },
@@ -2412,29 +2450,16 @@ const App = () => {
     const [message, setMessage] = useState(null);
     const [currentUser, setCurrentUser] = useState(null);
 
-    // Verileri localStorage yerine standart useState ile yönetiyoruz.
-    // Gerçek uygulamada bu veriler bir API'den useEffect ile çekilecek.
-    const [fuelRecords, setFuelRecords] = useState([]);
-    const [aircraftData, setAircraftData] = useState([]);
-    const [tankerData, setTankerData] = useState([]);
-    const [approvalRequests, setApprovalRequests] = useState([]);
-    const [personnelApprovalRequests, setPersonnelApprovalRequests] = useState([]);
-    const [personnelList, setPersonnelList] = useState(INITIAL_PERSONNEL_LIST);
-    const [adminCredentials, setAdminCredentials] = useState([{ id: 'user-0', name: 'OGM Admin', username: 'ogm', password: '1839' }]);
-    const [airportList, setAirportList] = useState(INITIAL_AIRPORT_LIST);
+    // Verileri tarayıcıda kalıcı hale getirmek için useLocalStorage kullanıyoruz.
+    const [fuelRecords, setFuelRecords] = useLocalStorage(LOCAL_STORAGE_KEYS.FUEL_RECORDS, []);
+    const [aircraftData, setAircraftData] = useLocalStorage(LOCAL_STORAGE_KEYS.AIRCRAFT_DATA, []);
+    const [tankerData, setTankerData] = useLocalStorage(LOCAL_STORAGE_KEYS.TANKER_DATA, []);
+    const [approvalRequests, setApprovalRequests] = useLocalStorage(LOCAL_STORAGE_KEYS.APPROVAL_REQUESTS, []);
+    const [personnelApprovalRequests, setPersonnelApprovalRequests] = useLocalStorage(LOCAL_STORAGE_KEYS.PERSONNEL_APPROVAL_REQUESTS, []);
+    const [personnelList, setPersonnelList] = useLocalStorage(LOCAL_STORAGE_KEYS.PERSONNEL_LIST, INITIAL_PERSONNEL_LIST);
+    const [adminCredentials, setAdminCredentials] = useLocalStorage(LOCAL_STORAGE_KEYS.ADMIN_CREDENTIALS, [{ id: 'user-0', name: 'OGM Admin', username: 'ogm', password: '1839' }]);
+    const [airportList, setAirportList] = useLocalStorage(LOCAL_STORAGE_KEYS.AIRPORT_LIST, INITIAL_AIRPORT_LIST);
     
-    // TODO: Backend entegrasyonu yapıldığında, verileri çekmek için bu bölüm kullanılacak.
-    // useEffect(() => {
-    //   // fetch('/api/data').then(res => res.json()).then(data => {
-    //   //   setFuelRecords(data.fuelRecords);
-    //   //   setAircraftData(data.aircraftData);
-    //   //   setTankerData(data.tankerData);
-    //   //   setPersonnelList(data.personnelList);
-    //   //   ... etc
-    //   // });
-    // }, []);
-
-
     const showMessage = (text, type) => {
         setMessage({ text, type });
         setTimeout(() => setMessage(null), 3000);
@@ -2442,17 +2467,10 @@ const App = () => {
 
     const addFuelRecord = (record) => {
         const newRecord = { ...record, id: Date.now().toString() };
-        // TODO: Yeni kaydı localStorage yerine API'ye gönder.
-        // fetch('/api/fuel-records', { method: 'POST', body: JSON.stringify(newRecord) })
-        //   .then(res => res.json())
-        //   .then(savedRecord => {
-        //      setFuelRecords(prev => [...prev, savedRecord]);
-        //   });
         setFuelRecords(prev => [...prev, newRecord]);
     };
     
      const addPersonnelRequest = (request) => {
-        // TODO: Yeni personel talebini API'ye gönder.
         setPersonnelApprovalRequests(prev => [...prev, request]);
         showMessage('Yeni personel kayıt talebi yönetici onayına gönderildi.', 'success');
     };
