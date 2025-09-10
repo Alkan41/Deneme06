@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="tr">
   <head>
@@ -56,7 +57,6 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
-
 // --- BUNDLED FROM: types.ts ---
 // All interfaces and types are now globally available within this script module.
 // interface Airport { id: string; name: string; type: 'Sivil' | 'Askeri'; }
@@ -71,54 +71,13 @@ import 'jspdf-autotable';
 // interface PersonnelApprovalRequest { id: string; name: string; job: string; timestamp: string; }
 
 
-// --- BUNDLED FROM: services/apiService.ts ---
-const FAKE_API_LATENCY = 300;
-
-const apiService = {
-    getItem: (key) => {
-        return new Promise((resolve, reject) => {
-            setTimeout(() => {
-                try {
-                    const item = window.localStorage.getItem(key);
-                    resolve(item ? JSON.parse(item) : null);
-                } catch (error) {
-                    console.error(`API Error (getItem: ${key}):`, error);
-                    reject(error);
-                }
-            }, FAKE_API_LATENCY);
-        });
-    },
-
-    setItem: (key, value) => {
-         return new Promise((resolve, reject) => {
-            setTimeout(() => {
-                try {
-                    window.localStorage.setItem(key, JSON.stringify(value));
-                    resolve(true);
-                } catch (error) {
-                    console.error(`API Error (setItem: ${key}):`, error);
-                    reject(error);
-                }
-            }, FAKE_API_LATENCY);
-        });
-    }
-};
-
-
 // --- BUNDLED FROM: constants.ts ---
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwRcSoF93-LkltqM7Q2Bz22-nkRlG1XkG6flg2N462rlHN2XqCMLCMAjwGMj9TIIF55mQ/exec";
+
 const VIEW_FUEL_ENTRY = 'fuelEntry';
 const VIEW_SEARCH_RECORDS = 'searchResults';
 const VIEW_ADMIN_PANEL = 'adminPanel';
-const LOCAL_STORAGE_KEYS = {
-    FUEL_RECORDS: 'ogm_fuelRecords',
-    AIRCRAFT_DATA: 'ogm_aircraftData',
-    TANKER_DATA: 'ogm_tankerData',
-    APPROVAL_REQUESTS: 'ogm_approvalRequests',
-    PERSONNEL_APPROVAL_REQUESTS: 'ogm_personnelApprovalRequests',
-    PERSONNEL_LIST: 'ogm_personnelList',
-    ADMIN_CREDENTIALS: 'ogm_adminCredentials',
-    AIRPORT_LIST: 'ogm_airportList',
-};
+
 const INITIAL_PERSONNEL_LIST = [
     { id: 'p1', name: 'Ahmet Yılmaz', job: 'Pilot' },
     { id: 'p2', name: 'Ayşe Kaya', job: 'Pilot' },
@@ -920,7 +879,7 @@ const FuelEntryForm = ({ personnelList, aircraftData, tankerData, airportList, o
 };
 
 // --- BUNDLED FROM: components/SearchRecords.tsx ---
-const SearchRecords = ({ fuelRecords, personnelList, aircraftData, tankerData, airportList, setApprovalRequests, showMessage }) => {
+const SearchRecords = ({ fuelRecords, personnelList, aircraftData, tankerData, airportList, onAddApprovalRequest, showMessage }) => {
     const [filters, setFilters] = useState({ startDate: '', endDate: '', personnelId: '', tailNumber: '', tankerPlate: '', kayitNumarasi: '' });
     const [displayedRecords, setDisplayedRecords] = useState([]);
     const [hasSearched, setHasSearched] = useState(false);
@@ -993,7 +952,7 @@ const SearchRecords = ({ fuelRecords, personnelList, aircraftData, tankerData, a
             requesterName: editingRecord.personnelName,
             timestamp: new Date().toISOString()
         };
-        setApprovalRequests(prev => [...prev, newRequest]);
+        onAddApprovalRequest(newRequest);
         showMessage('Düzenleme talebiniz yönetici onayına gönderildi.', 'success');
         setIsEditModalOpen(false);
         setEditingRecord(null);
@@ -1189,7 +1148,7 @@ const AdminLogin = ({ onLoginSuccess, showMessage, adminCredentials }) => {
 };
 
 // --- BUNDLED FROM: components/AircraftDataManagement.tsx ---
-const AircraftDataManagement = ({ aircraftData, setAircraftData, showMessage }) => {
+const AircraftDataManagement = ({ aircraftData, onUpdate, showMessage }) => {
     const [newAircraft, setNewAircraft] = useState({ aircraftType: '', tailNumber: '', company: '', callSign: '' });
     const [editingAircraft, setEditingAircraft] = useState(null);
     const [selectedIds, setSelectedIds] = useState(new Set());
@@ -1202,13 +1161,15 @@ const AircraftDataManagement = ({ aircraftData, setAircraftData, showMessage }) 
             showMessage('Lütfen tüm alanları doldurun.', 'error');
             return;
         }
-        setAircraftData(prev => [...prev, { ...newAircraft, id: Date.now().toString(), tailNumber: newAircraft.tailNumber.toUpperCase() }]);
+        const updatedList = [...aircraftData, { ...newAircraft, id: Date.now().toString(), tailNumber: newAircraft.tailNumber.toUpperCase() }];
+        onUpdate(updatedList);
         showMessage('Hava aracı başarıyla eklendi.', 'success');
         setNewAircraft({ aircraftType: '', tailNumber: '', company: '', callSign: '' });
     };
     const handleUpdateAircraft = () => {
         if (!editingAircraft) return;
-        setAircraftData(prev => prev.map(a => (a.id === editingAircraft.id ? editingAircraft : a)));
+        const updatedList = aircraftData.map(a => (a.id === editingAircraft.id ? editingAircraft : a));
+        onUpdate(updatedList);
         showMessage('Hava aracı güncellendi.', 'success');
         setEditingAircraft(null);
     };
@@ -1217,7 +1178,8 @@ const AircraftDataManagement = ({ aircraftData, setAircraftData, showMessage }) 
             showMessage('Lütfen silmek için en az bir kayıt seçin.', 'error');
             return;
         }
-        setAircraftData(prev => prev.filter(a => !selectedIds.has(a.id)));
+        const updatedList = aircraftData.filter(a => !selectedIds.has(a.id));
+        onUpdate(updatedList);
         showMessage(`${selectedIds.size} kayıt silindi.`, 'success');
         setSelectedIds(new Set());
     };
@@ -1319,7 +1281,7 @@ const AircraftDataManagement = ({ aircraftData, setAircraftData, showMessage }) 
 };
 
 // --- BUNDLED FROM: components/TankerDataManagement.tsx ---
-const TankerDataManagement = ({ tankerData, setTankerData, showMessage }) => {
+const TankerDataManagement = ({ tankerData, onUpdate, showMessage }) => {
     const [newTanker, setNewTanker] = useState({ plate: '', region: '', company: '', capacity: '' });
     const [editingTanker, setEditingTanker] = useState(null);
     const [selectedIds, setSelectedIds] = useState(new Set());
@@ -1331,13 +1293,15 @@ const TankerDataManagement = ({ tankerData, setTankerData, showMessage }) => {
             showMessage('Lütfen tüm alanları doldurun.', 'error');
             return;
         }
-        setTankerData(prev => [...prev, { ...newTanker, id: Date.now().toString(), plate: newTanker.plate.toUpperCase(), capacity: parseFloat(newTanker.capacity) }]);
+        const updatedList = [...tankerData, { ...newTanker, id: Date.now().toString(), plate: newTanker.plate.toUpperCase(), capacity: parseFloat(newTanker.capacity) }];
+        onUpdate(updatedList);
         showMessage('Tanker başarıyla eklendi.', 'success');
         setNewTanker({ plate: '', region: '', company: '', capacity: '' });
     };
     const handleUpdateTanker = () => {
         if (!editingTanker) return;
-        setTankerData(prev => prev.map(t => (t.id === editingTanker.id ? { ...editingTanker, capacity: parseFloat(editingTanker.capacity) } : t)));
+        const updatedList = tankerData.map(t => (t.id === editingTanker.id ? { ...editingTanker, capacity: parseFloat(editingTanker.capacity) } : t));
+        onUpdate(updatedList);
         showMessage('Tanker güncellendi.', 'success');
         setEditingTanker(null);
     };
@@ -1346,7 +1310,8 @@ const TankerDataManagement = ({ tankerData, setTankerData, showMessage }) => {
             showMessage('Lütfen silmek için en az bir kayıt seçin.', 'error');
             return;
         }
-        setTankerData(prev => prev.filter(t => !selectedIds.has(t.id)));
+        const updatedList = tankerData.filter(t => !selectedIds.has(t.id));
+        onUpdate(updatedList);
         showMessage(`${selectedIds.size} tanker kaydı silindi.`, 'success');
         setSelectedIds(new Set());
     };
@@ -1425,7 +1390,7 @@ const TankerDataManagement = ({ tankerData, setTankerData, showMessage }) => {
 };
 
 // --- BUNDLED FROM: components/AirportDataManagement.tsx ---
-const AirportDataManagement = ({ airportList, setAirportList, showMessage }) => {
+const AirportDataManagement = ({ airportList, onUpdate, showMessage }) => {
     const [newAirport, setNewAirport] = useState({ name: '', type: 'Sivil' });
     const [editingAirport, setEditingAirport] = useState(null);
     const [selectedIds, setSelectedIds] = useState(new Set());
@@ -1440,14 +1405,16 @@ const AirportDataManagement = ({ airportList, setAirportList, showMessage }) => 
             showMessage('Lütfen hava limanı adını girin.', 'error');
             return;
         }
-        setAirportList(prev => [...prev, { ...newAirport, id: `airport-${Date.now()}` }]);
+        const updatedList = [...airportList, { ...newAirport, id: `airport-${Date.now()}` }];
+        onUpdate(updatedList);
         showMessage('Hava limanı başarıyla eklendi.', 'success');
         setNewAirport({ name: '', type: 'Sivil' });
     };
 
     const handleUpdateAirport = () => {
         if (!editingAirport) return;
-        setAirportList(prev => prev.map(a => (a.id === editingAirport.id ? editingAirport : a)));
+        const updatedList = airportList.map(a => (a.id === editingAirport.id ? editingAirport : a));
+        onUpdate(updatedList);
         showMessage('Hava limanı güncellendi.', 'success');
         setEditingAirport(null);
     };
@@ -1457,7 +1424,8 @@ const AirportDataManagement = ({ airportList, setAirportList, showMessage }) => 
             showMessage('Lütfen silmek için en az bir kayıt seçin.', 'error');
             return;
         }
-        setAirportList(prev => prev.filter(a => !selectedIds.has(a.id)));
+        const updatedList = airportList.filter(a => !selectedIds.has(a.id));
+        onUpdate(updatedList);
         showMessage(`${selectedIds.size} hava limanı kaydı silindi.`, 'success');
         setSelectedIds(new Set());
     };
@@ -1546,48 +1514,30 @@ const AirportDataManagement = ({ airportList, setAirportList, showMessage }) => 
 
 
 // --- BUNDLED FROM: components/ApprovalRequests.tsx ---
-const ApprovalRequestsComponent = ({ approvalRequests, setApprovalRequests, personnelApprovalRequests, setPersonnelApprovalRequests, setFuelRecords, setPersonnelList, showMessage }) => {
+const ApprovalRequestsComponent = ({ approvalRequests, personnelApprovalRequests, onHandleEditApproval, onHandlePersonnelApproval, showMessage }) => {
     const [selectedRequest, setSelectedRequest] = useState(null);
     const [selectedPersonnelRequest, setSelectedPersonnelRequest] = useState(null);
     
     const handleApprove = () => {
         if (!selectedRequest) return;
-        setFuelRecords(prevRecords => {
-            return prevRecords.map(record => {
-                if (record.id === selectedRequest.originalRecord.id) {
-                    return { ...record, ...selectedRequest.requestedChanges };
-                }
-                return record;
-            });
-        });
-        setApprovalRequests(prev => prev.filter(req => req.id !== selectedRequest.id));
-        showMessage('Talep onaylandı ve kayıt güncellendi.', 'success');
+        onHandleEditApproval(selectedRequest.id, true);
         setSelectedRequest(null);
     };
     const handleReject = () => {
         if (!selectedRequest) return;
-        setApprovalRequests(prev => prev.filter(req => req.id !== selectedRequest.id));
-        showMessage('Talep reddedildi.', 'error');
+        onHandleEditApproval(selectedRequest.id, false);
         setSelectedRequest(null);
     };
 
     const handlePersonnelApprove = () => {
         if (!selectedPersonnelRequest) return;
-        const newPersonnel = {
-            id: `p-${Date.now()}`,
-            name: selectedPersonnelRequest.name,
-            job: selectedPersonnelRequest.job
-        };
-        setPersonnelList(prev => [...prev, newPersonnel]);
-        setPersonnelApprovalRequests(prev => prev.filter(req => req.id !== selectedPersonnelRequest.id));
-        showMessage('Yeni personel onaylandı ve listeye eklendi.', 'success');
+        onHandlePersonnelApproval(selectedPersonnelRequest.id, true);
         setSelectedPersonnelRequest(null);
     };
 
     const handlePersonnelReject = () => {
         if (!selectedPersonnelRequest) return;
-        setPersonnelApprovalRequests(prev => prev.filter(req => req.id !== selectedPersonnelRequest.id));
-        showMessage('Yeni personel talebi reddedildi.', 'error');
+        onHandlePersonnelApproval(selectedPersonnelRequest.id, false);
         setSelectedPersonnelRequest(null);
     };
 
@@ -1704,7 +1654,7 @@ const ApprovalRequestsComponent = ({ approvalRequests, setApprovalRequests, pers
 
 
 // --- BUNDLED FROM: components/PersonnelDataManagement.tsx ---
-const PersonnelDataManagement = ({ personnelList, setPersonnelList, showMessage }) => {
+const PersonnelDataManagement = ({ personnelList, onUpdate, showMessage }) => {
     const [newPersonnel, setNewPersonnel] = useState({ name: '', job: '' });
     const [editingPersonnel, setEditingPersonnel] = useState(null);
     const [selectedIds, setSelectedIds] = useState(new Set());
@@ -1716,13 +1666,15 @@ const PersonnelDataManagement = ({ personnelList, setPersonnelList, showMessage 
             showMessage('Lütfen tüm alanları doldurun.', 'error');
             return;
         }
-        setPersonnelList(prev => [...prev, { ...newPersonnel, id: `p${Date.now()}` }]);
+        const updatedList = [...personnelList, { ...newPersonnel, id: `p${Date.now()}` }];
+        onUpdate(updatedList);
         showMessage('Personel başarıyla eklendi.', 'success');
         setNewPersonnel({ name: '', job: '' });
     };
     const handleUpdatePersonnel = () => {
         if (!editingPersonnel) return;
-        setPersonnelList(prev => prev.map(p => (p.id === editingPersonnel.id ? editingPersonnel : p)));
+        const updatedList = personnelList.map(p => (p.id === editingPersonnel.id ? editingPersonnel : p));
+        onUpdate(updatedList);
         showMessage('Personel güncellendi.', 'success');
         setEditingPersonnel(null);
     };
@@ -1731,7 +1683,8 @@ const PersonnelDataManagement = ({ personnelList, setPersonnelList, showMessage 
             showMessage('Lütfen silmek için en az bir kayıt seçin.', 'error');
             return;
         }
-        setPersonnelList(prev => prev.filter(p => !selectedIds.has(p.id)));
+        const updatedList = personnelList.filter(p => !selectedIds.has(p.id));
+        onUpdate(updatedList);
         showMessage(`${selectedIds.size} personel kaydı silindi.`, 'success');
         setSelectedIds(new Set());
     };
@@ -1814,7 +1767,7 @@ const PersonnelDataManagement = ({ personnelList, setPersonnelList, showMessage 
 };
 
 // --- BUNDLED FROM: components/UserManagement.tsx ---
-const UserManagement = ({ adminCredentials, setAdminCredentials, showMessage }) => {
+const UserManagement = ({ adminCredentials, onUpdate, showMessage }) => {
     const [newUser, setNewUser] = useState({ name: '', username: '', password: '' });
 
     const handleInputChange = (e) => {
@@ -1832,7 +1785,7 @@ const UserManagement = ({ adminCredentials, setAdminCredentials, showMessage }) 
             return;
         }
         const userToAdd = { ...newUser, id: `user-${Date.now()}` };
-        setAdminCredentials(prev => [...prev, userToAdd]);
+        onUpdate([...adminCredentials, userToAdd]);
         showMessage('Yeni kullanıcı başarıyla eklendi.', 'success');
         setNewUser({ name: '', username: '', password: '' });
     };
@@ -1842,7 +1795,7 @@ const UserManagement = ({ adminCredentials, setAdminCredentials, showMessage }) 
             showMessage('En az bir yönetici kalmalıdır.', 'error');
             return;
         }
-        setAdminCredentials(prev => prev.filter(u => u.id !== userId));
+        onUpdate(adminCredentials.filter(u => u.id !== userId));
         showMessage('Kullanıcı silindi.', 'success');
     };
 
@@ -1887,7 +1840,7 @@ const UserManagement = ({ adminCredentials, setAdminCredentials, showMessage }) 
 };
 
 // --- BUNDLED FROM: components/RecordManagement.tsx ---
-const RecordManagement = ({ fuelRecords, setFuelRecords, aircraftData, tankerData, airportList, showMessage }) => {
+const RecordManagement = ({ fuelRecords, onUpdateFuelRecords, aircraftData, tankerData, airportList, showMessage }) => {
     const [filters, setFilters] = useState({
         startDate: '',
         endDate: '',
@@ -1950,7 +1903,8 @@ const RecordManagement = ({ fuelRecords, setFuelRecords, aircraftData, tankerDat
     
     const handleUpdateRecord = () => {
         if (!editingRecord) return;
-        setFuelRecords(prev => prev.map(rec => rec.id === editingRecord.id ? editingRecord : rec));
+        const updatedList = fuelRecords.map(rec => rec.id === editingRecord.id ? editingRecord : rec)
+        onUpdateFuelRecords(updatedList);
         setDisplayedRecords(prev => prev.map(rec => rec.id === editingRecord.id ? editingRecord : rec));
         showMessage('Kayıt başarıyla güncellendi.', 'success');
         setEditingRecord(null);
@@ -1961,7 +1915,8 @@ const RecordManagement = ({ fuelRecords, setFuelRecords, aircraftData, tankerDat
             showMessage('Lütfen silmek için en az bir kayıt seçin.', 'error');
             return;
         }
-        setFuelRecords(prev => prev.filter(rec => !selectedIds.has(rec.id)));
+        const updatedList = fuelRecords.filter(rec => !selectedIds.has(rec.id));
+        onUpdateFuelRecords(updatedList);
         setDisplayedRecords(prev => prev.filter(rec => !selectedIds.has(rec.id)));
         showMessage(`${selectedIds.size} kayıt silindi.`, 'success');
         setSelectedIds(new Set());
@@ -2314,6 +2269,7 @@ const AdminPanel = (props) => {
                 const data = new Uint8Array(e.target?.result);
                 const workbook = XLSX.read(data, { type: 'array' });
                 const successMessages = [];
+                const updates = {};
 
                 workbook.SheetNames.forEach(sheetName => {
                     const worksheet = workbook.Sheets[sheetName];
@@ -2332,7 +2288,7 @@ const AdminPanel = (props) => {
                             return { id: `file-${Date.now()}-${index}`, tailNumber: String(row[0]).trim().toUpperCase(), company: String(row[1]).trim(), aircraftType: String(row[2]).trim(), callSign: String(row[3]).trim() };
                         }).filter(Boolean);
                         if (newAircrafts.length > 0) {
-                            props.setAircraftData(prev => [...prev, ...newAircrafts]);
+                            updates.aircraftData = [...props.aircraftData, ...newAircrafts];
                             successMessages.push(`${newAircrafts.length} hava aracı`);
                         }
                     } else if (normalizedSheetName === 'tanker verisi') {
@@ -2341,7 +2297,7 @@ const AdminPanel = (props) => {
                             return { id: `file-tanker-${Date.now()}-${index}`, plate: String(row[0]).trim().toUpperCase(), region: String(row[1]).trim(), company: String(row[2]).trim(), capacity: parseFloat(row[3]) || 0 };
                         }).filter(Boolean);
                         if (newTankers.length > 0) {
-                            props.setTankerData(prev => [...prev, ...newTankers]);
+                            updates.tankerData = [...props.tankerData, ...newTankers];
                             successMessages.push(`${newTankers.length} tanker`);
                         }
                     } else if (normalizedSheetName === 'personel verisi') {
@@ -2352,7 +2308,7 @@ const AdminPanel = (props) => {
                             return { id: `file-personnel-${Date.now()}-${index}`, name: String(row[0]).trim(), job: job };
                         }).filter(Boolean);
                         if (newPersonnelList.length > 0) {
-                            props.setPersonnelList(prev => [...prev, ...newPersonnelList]);
+                            updates.personnelList = [...props.personnelList, ...newPersonnelList];
                             successMessages.push(`${newPersonnelList.length} personel`);
                         }
                     } else if (normalizedSheetName === 'hava limanı verisi') {
@@ -2363,13 +2319,14 @@ const AdminPanel = (props) => {
                              return { id: `file-airport-${Date.now()}-${index}`, name: String(row[0]).trim(), type };
                         }).filter(Boolean);
                         if (newAirports.length > 0) {
-                            props.setAirportList(prev => [...prev, ...newAirports]);
+                            updates.airportList = [...props.airportList, ...newAirports];
                             successMessages.push(`${newAirports.length} hava limanı`);
                         }
                     }
                 });
 
-                if (successMessages.length > 0) {
+                if (Object.keys(updates).length > 0) {
+                    props.onBulkUpdate(updates);
                     props.showMessage(`${successMessages.join(', ')} kaydı başarıyla yüklendi.`, 'success');
                 } else {
                     props.showMessage('Excel dosyasında geçerli veri içeren sayfa bulunamadı. Sayfa adlarını kontrol edin: "hava aracı verisi", "tanker verisi", "personel verisi", "hava limanı verisi".', 'error');
@@ -2406,10 +2363,10 @@ const AdminPanel = (props) => {
                      React.createElement("p", { className: "text-sm text-slate-600 mt-1" }, React.createElement("strong", null, "Not:"), " 'hava limanı verisi' sayfası iki sütun içermelidir: Adı ve Tipi ('Sivil' veya 'Askeri')."),
                     React.createElement("div", { className: "mt-4" }, React.createElement(FileUpload, { onFileUpload: handleBulkFileUpload }))
                  ),
-                 activeDataEntryView === 'aircraft' && React.createElement(AircraftDataManagement, { aircraftData: props.aircraftData, setAircraftData: props.setAircraftData, showMessage: props.showMessage }),
-                 activeDataEntryView === 'airport' && React.createElement(AirportDataManagement, { airportList: props.airportList, setAirportList: props.setAirportList, showMessage: props.showMessage }),
-                 activeDataEntryView === 'tanker' && React.createElement(TankerDataManagement, { tankerData: props.tankerData, setTankerData: props.setTankerData, showMessage: props.showMessage }),
-                 activeDataEntryView === 'personnel' && React.createElement(PersonnelDataManagement, { personnelList: props.personnelList, setPersonnelList: props.setPersonnelList, showMessage: props.showMessage })
+                 activeDataEntryView === 'aircraft' && React.createElement(AircraftDataManagement, { aircraftData: props.aircraftData, onUpdate: props.updateAircraftData, showMessage: props.showMessage }),
+                 activeDataEntryView === 'airport' && React.createElement(AirportDataManagement, { airportList: props.airportList, onUpdate: props.updateAirportList, showMessage: props.showMessage }),
+                 activeDataEntryView === 'tanker' && React.createElement(TankerDataManagement, { tankerData: props.tankerData, onUpdate: props.updateTankerData, showMessage: props.showMessage }),
+                 activeDataEntryView === 'personnel' && React.createElement(PersonnelDataManagement, { personnelList: props.personnelList, onUpdate: props.updatePersonnelList, showMessage: props.showMessage })
             )
         )
     };
@@ -2441,10 +2398,10 @@ const AdminPanel = (props) => {
             ),
             React.createElement("main", { className: "flex-1" },
                 activeModule === 'dataEntry' && React.createElement(DataEntryModule, null),
-                activeModule === 'receipts' && React.createElement(RecordManagement, { fuelRecords: props.fuelRecords, setFuelRecords: props.setFuelRecords, aircraftData: props.aircraftData, tankerData: props.tankerData, airportList: props.airportList, showMessage: props.showMessage }),
+                activeModule === 'receipts' && React.createElement(RecordManagement, { fuelRecords: props.fuelRecords, onUpdateFuelRecords: props.updateFuelRecords, aircraftData: props.aircraftData, tankerData: props.tankerData, airportList: props.airportList, showMessage: props.showMessage }),
                 activeModule === 'tankerTracking' && React.createElement(TankerTakip, { tankerData: props.tankerData, fuelRecords: props.fuelRecords, showMessage: props.showMessage }),
-                activeModule === 'approval' && React.createElement(ApprovalRequestsComponent, { approvalRequests: props.approvalRequests, setApprovalRequests: props.setApprovalRequests, personnelApprovalRequests: props.personnelApprovalRequests, setPersonnelApprovalRequests: props.setPersonnelApprovalRequests, setFuelRecords: props.setFuelRecords, setPersonnelList: props.setPersonnelList, showMessage: props.showMessage }),
-                activeModule === 'settings' && React.createElement(UserManagement, { adminCredentials: props.adminCredentials, setAdminCredentials: props.setAdminCredentials, showMessage: props.showMessage })
+                activeModule === 'approval' && React.createElement(ApprovalRequestsComponent, { approvalRequests: props.approvalRequests, personnelApprovalRequests: props.personnelApprovalRequests, onHandleEditApproval: props.handleEditApproval, onHandlePersonnelApproval: props.handlePersonnelApproval, showMessage: props.showMessage }),
+                activeModule === 'settings' && React.createElement(UserManagement, { adminCredentials: props.adminCredentials, onUpdate: props.updateAdminCredentials, showMessage: props.showMessage })
             )
         )
     );
@@ -2456,104 +2413,164 @@ const App = () => {
     const [message, setMessage] = useState(null);
     const [currentUser, setCurrentUser] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState(null);
 
-    // Data states
+    // State initialization
     const [fuelRecords, setFuelRecords] = useState([]);
     const [aircraftData, setAircraftData] = useState([]);
     const [tankerData, setTankerData] = useState([]);
     const [approvalRequests, setApprovalRequests] = useState([]);
     const [personnelApprovalRequests, setPersonnelApprovalRequests] = useState([]);
-    const [personnelList, setPersonnelList] = useState([]);
-    const [adminCredentials, setAdminCredentials] = useState([]);
-    const [airportList, setAirportList] = useState([]);
+    const [personnelList, setPersonnelList] = useState(INITIAL_PERSONNEL_LIST);
+    const [adminCredentials, setAdminCredentials] = useState([{ id: 'user-0', name: 'OGM Admin', username: 'ogm', password: '1839' }]);
+    const [airportList, setAirportList] = useState(INITIAL_AIRPORT_LIST);
+
+    const showMessage = (text, type) => {
+        setMessage({ text, type });
+        setTimeout(() => setMessage(null), 5000); // Increased timeout for better readability
+    };
+
+    // API helper
+    const postData = async (action, payload) => {
+        try {
+            const requestBody = { action, payload };
+            const res = await fetch(SCRIPT_URL, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8',
+                },
+                body: JSON.stringify(requestBody)
+            });
+
+            if (!res.ok) {
+                const errorText = await res.text();
+                throw new Error(`HTTP error! status: ${res.status}, body: ${errorText}`);
+            }
+            
+            const responseText = await res.text();
+            try {
+                const result = JSON.parse(responseText);
+                if (result.status !== 'success' && result.success !== true) {
+                     throw new Error(result.message || 'Script error');
+                }
+                return result;
+            } catch (jsonError) {
+                 console.error('Failed to parse JSON response:', responseText);
+                 throw new Error('Invalid JSON response from server.');
+            }
+        } catch (error) {
+            console.error(`Error in postData for action "${action}":`, error);
+            if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+                 showMessage('Ağ Hatası: Sunucuya ulaşılamadı. Google Apps Script Dağıtım ayarlarını kontrol edin: "Erişimi olanlar" seçeneği "Herkes" olarak ayarlanmalıdır.', 'error');
+            } else {
+                showMessage(`Bir hata oluştu: ${error.message || 'Bilinmeyen sunucu hatası.'}`, 'error');
+            }
+            throw error;
+        }
+    };
     
-    // Initial data load effect
+    // Initial data loading
     useEffect(() => {
-        const loadData = async () => {
+        const fetchData = async () => {
             try {
                 setIsLoading(true);
-                const [
-                    storedFuelRecords,
-                    storedAircraftData,
-                    storedTankerData,
-                    storedApprovalRequests,
-                    storedPersonnelApprovalRequests,
-                    storedPersonnelList,
-                    storedAdminCredentials,
-                    storedAirportList
-                ] = await Promise.all([
-                    apiService.getItem(LOCAL_STORAGE_KEYS.FUEL_RECORDS),
-                    apiService.getItem(LOCAL_STORAGE_KEYS.AIRCRAFT_DATA),
-                    apiService.getItem(LOCAL_STORAGE_KEYS.TANKER_DATA),
-                    apiService.getItem(LOCAL_STORAGE_KEYS.APPROVAL_REQUESTS),
-                    apiService.getItem(LOCAL_STORAGE_KEYS.PERSONNEL_APPROVAL_REQUESTS),
-                    apiService.getItem(LOCAL_STORAGE_KEYS.PERSONNEL_LIST),
-                    apiService.getItem(LOCAL_STORAGE_KEYS.ADMIN_CREDENTIALS),
-                    apiService.getItem(LOCAL_STORAGE_KEYS.AIRPORT_LIST)
+                const [panelDataResult, approvalRequestsResult, personnelApprovalRequestsResult] = await Promise.all([
+                    postData('onGetAdminPanelData', null),
+                    postData('onGetApprovalRequests', null),
+                    postData('onGetPersonnelApprovalRequests', null)
                 ]);
 
-                setFuelRecords(storedFuelRecords || []);
-                setAircraftData(storedAircraftData || []);
-                setTankerData(storedTankerData || []);
-                setApprovalRequests(storedApprovalRequests || []);
-                setPersonnelApprovalRequests(storedPersonnelApprovalRequests || []);
-                setPersonnelList(storedPersonnelList || INITIAL_PERSONNEL_LIST);
-                setAdminCredentials(storedAdminCredentials || [{ id: 'user-0', name: 'OGM Admin', username: 'ogm', password: '1839' }]);
-                setAirportList(storedAirportList || INITIAL_AIRPORT_LIST);
+                const panelData = panelDataResult.data;
+                
+                setFuelRecords(panelData.fuelRecords || []);
+                setAircraftData(panelData.aircrafts || []);
+                setTankerData(panelData.tankers || []);
+                setPersonnelList(panelData.personnel && panelData.personnel.length > 0 ? panelData.personnel : INITIAL_PERSONNEL_LIST);
+                setAdminCredentials(panelData.admins && panelData.admins.length > 0 ? panelData.admins : [{ id: 'user-0', name: 'OGM Admin', username: 'ogm', password: '1839' }]);
+                setAirportList(panelData.airports && panelData.airports.length > 0 ? panelData.airports : INITIAL_AIRPORT_LIST);
+                
+                setApprovalRequests(approvalRequestsResult.data || []);
+                setPersonnelApprovalRequests(personnelApprovalRequestsResult.data || []);
 
-            } catch (err) {
-                setError('Veriler yüklenirken bir hata oluştu.');
-                showMessage('Veriler yüklenemedi.', 'error');
+            } catch (error) {
+                console.error("Failed to fetch initial data:", error);
             } finally {
                 setIsLoading(false);
             }
         };
-
-        loadData();
+        fetchData();
     }, []);
 
-    const showMessage = (text, type) => {
-        setMessage({ text, type });
-        setTimeout(() => setMessage(null), 3000);
-    };
-
-    // Data update functions that call the API service
-    const createApiUpdater = (state, setState, key) => {
-        return async (updater) => {
-            // Using the current state from a ref-like pattern is safer for async updates
-            // but for this level of complexity, direct state is acceptable.
-            const newValue = typeof updater === 'function' ? updater(state) : updater;
-            try {
-                await apiService.setItem(key, newValue);
-                setState(newValue);
-            } catch (error) {
-                showMessage('Veri kaydedilemedi.', 'error');
-                // Optionally revert state here
-            }
-        };
-    };
-
-    const updateFuelRecords = createApiUpdater(fuelRecords, setFuelRecords, LOCAL_STORAGE_KEYS.FUEL_RECORDS);
-    const updateAircraftData = createApiUpdater(aircraftData, setAircraftData, LOCAL_STORAGE_KEYS.AIRCRAFT_DATA);
-    const updateTankerData = createApiUpdater(tankerData, setTankerData, LOCAL_STORAGE_KEYS.TANKER_DATA);
-    const updateApprovalRequests = createApiUpdater(approvalRequests, setApprovalRequests, LOCAL_STORAGE_KEYS.APPROVAL_REQUESTS);
-    const updatePersonnelApprovalRequests = createApiUpdater(personnelApprovalRequests, setPersonnelApprovalRequests, LOCAL_STORAGE_KEYS.PERSONNEL_APPROVAL_REQUESTS);
-    const updatePersonnelList = createApiUpdater(personnelList, setPersonnelList, LOCAL_STORAGE_KEYS.PERSONNEL_LIST);
-    const updateAdminCredentials = createApiUpdater(adminCredentials, setAdminCredentials, LOCAL_STORAGE_KEYS.ADMIN_CREDENTIALS);
-    const updateAirportList = createApiUpdater(airportList, setAirportList, LOCAL_STORAGE_KEYS.AIRPORT_LIST);
-
-
+    // --- Data Mutation Functions ---
     const addFuelRecord = async (record) => {
-        const newRecord = { ...record, id: Date.now().toString() };
-        await updateFuelRecords(prev => [...prev, newRecord]);
+        const newRecord = { ...record, id: `rec-${Date.now()}` };
+        await postData('onAddRecord', newRecord);
+        setFuelRecords(prev => [...prev, newRecord]);
+    };
+
+    const addPersonnelRequest = async (request) => {
+       await postData('onAddPersonnelRequest', request);
+       setPersonnelApprovalRequests(prev => [...prev, request]);
+    };
+
+    const addApprovalRequest = async (request) => {
+        await postData('onAddApprovalRequest', request); // Assumed action name
+        setApprovalRequests(prev => [...prev, request]);
     };
     
-     const addPersonnelRequest = async (request) => {
-        await updatePersonnelApprovalRequests(prev => [...prev, request]);
-        showMessage('Yeni personel kayıt talebi yönetici onayına gönderildi.', 'success');
+    const updateFuelRecords = async (data) => {
+        await postData('onUpdateFuelRecords', data); // Assumed action name
+        setFuelRecords(data);
     };
 
+    const updateAircraftData = async (data) => {
+        await postData('onBulkUpdate', { aircraftData: data });
+        setAircraftData(data);
+    };
+    
+    const updateTankerData = async (data) => {
+        await postData('onBulkUpdate', { tankerData: data });
+        setTankerData(data);
+    };
+
+    const updatePersonnelList = async (data) => {
+        await postData('onBulkUpdate', { personnelList: data });
+        setPersonnelList(data);
+    };
+
+    const updateAirportList = async (data) => {
+        await postData('onBulkUpdate', { airportList: data });
+        setAirportList(data);
+    };
+
+    const updateAdminCredentials = async (data) => {
+        await postData('onUpdateAdminCredentials', data); // Assumed action name
+        setAdminCredentials(data);
+    };
+    
+    const handleEditApproval = async (requestId, approved) => {
+        const action = approved ? 'onApproveRequest' : 'onRejectRequest';
+        const result = await postData(action, { requestId });
+        setFuelRecords(result.data.fuelRecords);
+        setApprovalRequests(result.data.approvalRequests);
+        showMessage(approved ? 'Talep onaylandı.' : 'Talep reddedildi.', approved ? 'success' : 'error');
+    };
+
+    const handlePersonnelApproval = async (requestId, approved) => {
+        const action = approved ? 'onApprovePersonnelRequest' : 'onRejectPersonnelRequest';
+        const result = await postData(action, { requestId });
+        setPersonnelList(result.data.personnelList);
+        setPersonnelApprovalRequests(result.data.personnelApprovalRequests);
+        showMessage(approved ? 'Personel talebi onaylandı.' : 'Personel talebi reddedildi.', approved ? 'success' : 'error');
+    };
+
+    const handleBulkUpdate = async (updates) => {
+        const result = await postData('onBulkUpdate', updates);
+        if(result.data.aircraftData) setAircraftData(result.data.aircraftData);
+        if(result.data.tankerData) setTankerData(result.data.tankerData);
+        if(result.data.personnelList) setPersonnelList(result.data.personnelList);
+        if(result.data.airportList) setAirportList(result.data.airportList);
+    };
+    
     const uniquePersonnel = useMemo(() => {
         const seen = new Set();
         return personnelList.filter(p => {
@@ -2562,20 +2579,13 @@ const App = () => {
             return !duplicate;
         });
     }, [personnelList]);
-    
-    if (isLoading) {
-        return React.createElement("div", { className: "min-h-screen flex justify-center items-center bg-ogm-green-50" }, 
-            React.createElement("div", { className: "text-center" },
-                React.createElement("div", { className: "w-16 h-16 border-4 border-dashed rounded-full animate-spin border-ogm-green-600 mx-auto" }),
-                React.createElement("p", { className: "text-xl font-semibold text-ogm-green-800 mt-4" }, "Veriler Yükleniyor...")
-            )
+
+    if(isLoading) {
+        return React.createElement("div", { className: "min-h-screen flex items-center justify-center bg-ogm-green-900/50" }, 
+            React.createElement("div", { className: "text-white text-2xl font-semibold p-8 bg-ogm-green-700/80 rounded-lg shadow-xl" }, "Veriler Yükleniyor...")
         );
     }
-
-    if (error) {
-        return React.createElement("div", { className: "min-h-screen flex justify-center items-center text-xl font-semibold text-red-600" }, error);
-    }
-
+    
     return (
         React.createElement("div", { className: "min-h-screen flex flex-col items-center p-4 sm:p-6 text-slate-800" },
             message && React.createElement(MessageBox, { text: message.text, type: message.type }),
@@ -2604,31 +2614,32 @@ const App = () => {
                             aircraftData: aircraftData,
                             tankerData: tankerData,
                             airportList: airportList,
-                            setApprovalRequests: updateApprovalRequests,
+                            onAddApprovalRequest: addApprovalRequest,
                             showMessage: showMessage
                         })
                     ),
                     activeView === VIEW_ADMIN_PANEL && (
                         React.createElement(AdminPanel, {
                             aircraftData: aircraftData,
-                            setAircraftData: updateAircraftData,
+                            updateAircraftData: updateAircraftData,
                             tankerData: tankerData,
-                            setTankerData: updateTankerData,
+                            updateTankerData: updateTankerData,
                             airportList: airportList,
-                            setAirportList: updateAirportList,
+                            updateAirportList: updateAirportList,
                             personnelList: personnelList,
-                            setPersonnelList: updatePersonnelList,
+                            updatePersonnelList: updatePersonnelList,
                             approvalRequests: approvalRequests,
-                            setApprovalRequests: updateApprovalRequests,
                             personnelApprovalRequests: personnelApprovalRequests,
-                            setPersonnelApprovalRequests: updatePersonnelApprovalRequests,
                             fuelRecords: fuelRecords,
-                            setFuelRecords: updateFuelRecords,
+                            updateFuelRecords: updateFuelRecords,
                             showMessage: showMessage,
                             adminCredentials: adminCredentials,
-                            setAdminCredentials: updateAdminCredentials,
+                            updateAdminCredentials: updateAdminCredentials,
                             currentUser: currentUser,
-                            setCurrentUser: setCurrentUser
+                            setCurrentUser: setCurrentUser,
+                            handleEditApproval: handleEditApproval,
+                            handlePersonnelApproval: handlePersonnelApproval,
+                            onBulkUpdate: handleBulkUpdate,
                         })
                     )
                 )
@@ -2644,7 +2655,9 @@ if (!rootElement) {
 }
 const root = ReactDOM.createRoot(rootElement);
 root.render(
-    React.createElement(App, null)
+    React.createElement(React.StrictMode, null,
+        React.createElement(App, null)
+    )
 );
     </script>
   </body>
